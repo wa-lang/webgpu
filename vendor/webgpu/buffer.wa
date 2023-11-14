@@ -1,0 +1,26 @@
+
+import "js"
+
+type BufferUsage uint
+
+const (
+    BufferUsage_MAP_READ:       BufferUsage = 1
+    BufferUsage_MAP_WRITE:      BufferUsage = 2
+    BufferUsage_COPY_SRC:       BufferUsage = 4
+    BufferUsage_COPY_DST:       BufferUsage = 8
+    BufferUsage_INDEX:          BufferUsage = 16
+    BufferUsage_VERTEX:         BufferUsage = 32
+    BufferUsage_UNIFORM:        BufferUsage = 64
+    BufferUsage_STORAGE:        BufferUsage = 128
+    BufferUsage_INDIRECT:       BufferUsage = 256
+    BufferUsage_QUERY_RESOLVE:  BufferUsage = 512
+)
+
+type Buffer struct {
+    _device: js.ExtObj
+    _extref: js.ExtObj
+}
+
+func Buffer.Write(offset: uint, data: []byte) {
+    jsWriteBuffer(this._device.GetHandle(), this._extref.GetHandle(), offset, data)
+}

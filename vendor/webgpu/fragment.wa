@@ -1,0 +1,5 @@
+
+
+type FragTarget struct {
+    format: TextureFormat
+}

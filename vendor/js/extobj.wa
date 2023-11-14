@@ -1,0 +1,216 @@
+
+/*
+Handle 是外部 JS 对象在凹中的句柄，既 JS 对象在对象池中的ID
+*/
+type Handle u32
+
+/*
+凹内部一般不直接保存 Handle，因为对象可能被多次引用
+我们将 *Handle 包裹在 ExtObj 中，利用 *T 自带引用计数的特性追踪外部对象的引用
+Handle 和 ExtObj 使用场景的一般性规则：
+ 1. Handle 用于凹和 JS 环境的交互，标记操作的是对象池中的哪个对象
+ 2. ExtObj 用于凹内部保存、传递、复用外部对象的引用
+*/
+type ExtObj struct {
+    _handle: *Handle
+}
+
+/*
+某些外部对象的创建需要调用特定的 JS 方法，比如GpuDevice
+那么这些对象 JS 侧的构造过程是：
+ 1. 创建对象；
+ 2. 将其存入对象池，获取ID
+ 3. 将ID（既对象句柄）返回给凹代码
+由于凹内部一般不直接保存 Handle（见 ExtObj 定义），那么就需要调用下述函数将 Handle 存入 ExtObj 并返回
+*/
+func WrapExtObj(h: Handle) => ExtObj {
+    ph := &h
+    //Todo: SetFinalizer(ph)
+
+    return ExtObj{_handle: ph}
+}
+
+/*
+JS 导入方法，用于创建一个空 JS 对象，其将对象存入对象池后，返回ID（既对象句柄）
+*/
+#wa:import extobj new_obj
+func jsNewObj() => Handle
+
+/*
+JS 导入方法，用于释放对象池中的指定对象，如果该对象持有其它资源（比如GpuTexture），应执行相应清理动作
+当 h 指定的对象不再被凹内部引用时，该方法将被触发
+当对象被释放后，其在对象池中的 id 应被回收，后续创建新对象时可复用，避免对象池无限增大
+*/
+#wa:import extobj free_obj
+func jsFreeObj(h: Handle)
+
+/*
+创建一个 JS 空对象，返回 ExtObj
+*/
+func NewExtObj() => ExtObj {
+    return WrapExtObj(jsNewObj())        
+}
+
+/*
+获取 ExtObj 的对象句柄
+*/
+func ExtObj.GetHandle() => Handle {
+    if this._handle == nil {
+        return Handle(0)
+    }
+
+    return *this._handle
+}
+
+/*
+JS 导入方法，用于向一个对象中添加 i32 型的成员
+ h: 对象在对象池中的id
+ member_name: 成员名字
+ value: 成员的值
+*/
+#wa:import extobj set_member_i32
+func jsSetMember_i32(h: Handle, member_name: string, value: i32)
+
+/*
+向一个 ExtObj 对象中添加 i32 型的成员，jsSetMember_i32的封装
+*/
+func ExtObj.SetMember_i32(member_name: string, value: i32) {
+    jsSetMember_i32(this.GetHandle(), member_name, value)
+}
+
+/*
+JS 导入方法，用于向一个对象中添加 string 型的成员
+ h: 对象在对象池中的id
+ member_name: 成员名字
+ value: 成员的值
+*/
+#wa:import extobj set_member_string
+func jsSetMember_string(h: Handle, member_name: string, value: string)
+
+/*
+向一个 ExtObj 对象中添加 string 型的成员，jsSetMember_string的封装
+*/
+func ExtObj.SetMember_string(member_name: string, value: string) {
+    jsSetMember_string(this.GetHandle(), member_name, value)
+}
+
+/*
+JS 导入方法，用于将源对象添加为目标对象的成员
+ h: 目标对象在对象池中的id
+ member_name: 成员名字
+ value: 源对象在对象池中的id
+*/
+#wa:import extobj set_member_obj
+func jsSetMember_obj(h: Handle, member_name: string, value: Handle)
+
+/*
+向一个 ExtObj 对象中添加另一个对象成员，jsSetMember_obj的封装
+*/
+func ExtObj.SetMember_obj(member_name: string, value: ExtObj) {
+    jsSetMember_obj(this.GetHandle(), member_name, value.GetHandle())
+}
+
+/*
+JS 数组对象
+*/
+type ExtArray struct {
+    ExtObj    
+}
+
+/*
+JS 导入方法，用于创建一个空 JS 数组，其将数组存入对象池后，返回ID（既对象句柄）
+*/
+#wa:import extobj new_array
+func jsNewArray() => Handle
+
+/*
+创建一个 JS 空数组，返回 ExtObj
+*/
+func NewExtArray() => ExtArray {
+    return ExtArray{ExtObj: WrapExtObj(jsNewArray())}
+}
+
+/*
+JS 导入方法，用于向数组中添加 i32 型元素
+ h: 数组对象在对象池中的id
+ value: 被添加的值
+*/
+#wa:import extobj append_i32
+func jsAppend_i32(h: Handle, value: i32)
+
+/*
+向一个 ExtArray 数组添加一个 i32 型元素，jsAppend_i32的封装
+*/
+func ExtArray.Append_i32(value: i32) {
+    jsAppend_i32(this.GetHandle(), value)
+}
+
+/*
+JS 导入方法，用于向数组中添加 string 型元素
+ h: 数组对象在对象池中的id
+ value: 被添加的值
+*/
+#wa:import extobj append_string
+func jsAppend_string(h: Handle, value: string)
+
+/*
+向一个 ExtArray 数组添加一个 i32 型元素，jsAppend_string的封装
+*/
+func ExtArray.Append_string(value: string) {
+    jsAppend_string(this.GetHandle(), value)
+}
+
+/*
+JS 导入方法，用于向目标数组中添加源对象元素
+ h: 目标数组对象在对象池中的id
+ value: 源对象在对象池中的id
+*/
+#wa:import extobj append_obj
+func jsAppend_obj(h: Handle, value: Handle)
+
+/*
+向一个 ExtArray 数组添加一个对象元素，jsAppend_obj的封装
+*/
+func ExtArray.Append_obj(value: ExtObj) {
+    jsAppend_obj(this.GetHandle(), value.GetHandle())
+}
+
+
+/*
+例如若希望生成一个 JS 对象如下：
+```js
+{
+    i: 42
+    s: "Hello"
+    o: {
+        m1: 13
+        m2: "ff"
+    }
+    a: [
+        1,
+        {k: 999}
+    ]
+}
+```
+
+凹侧的代码为：
+```wa
+    obj := NewExtObj()
+    obj.SetMember_i32("i", 42)
+    obj.SetMember_string("s", "Hello")
+
+    mo := NewExtObj()
+    mo.SetMember_i32("m1", 13)
+    mo.SetMember_string("m2", "ff")
+
+    obj.SetMember_obj("o", &mo)
+
+    ao := NewExtArray()
+    ao.Append_i32(1)
+    so := NewExtObj()
+    so.SetMember_i32("k", 999)
+    ao.Append_obj(&so)
+
+    obj.SetMember_obj("a", &ao.ExtObj)
+```
+*/

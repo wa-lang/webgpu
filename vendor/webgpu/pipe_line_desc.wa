@@ -1,0 +1,11 @@
+
+
+type PipeLineDesc struct {
+    vertexModule: ShaderModule
+    vertexEntryPoint: string
+    vertexLayouts: []VertexLayout
+
+    fragModule: ShaderModule
+    fragEntryPoint: string
+    fragTargets: []FragTarget
+}

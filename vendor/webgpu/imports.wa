@@ -1,0 +1,17 @@
+
+import "js"
+
+#wa:import webgpu create_device
+func jsCreateDevice() => js.Handle
+
+#wa:import webgpu create_shader_module
+func jsCreateShaderModule(device: js.Handle, code: string) => js.Handle
+
+#wa:import webgpu create_buffer
+func jsCreateBuffer(device: js.Handle, byteLen: uint, usage: BufferUsage) => js.Handle
+
+#wa:import webgpu write_buffer
+func jsWriteBuffer(device, buffer: js.Handle, offset: uint, data: []byte)
+
+#wa:import webgpu get_preferred_canvas_format
+func jsGetPreferredCanvasFormat() => TextureFormat

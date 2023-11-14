@@ -1,0 +1,33 @@
+
+import "js"
+
+type Device struct {
+    _extref: js.ExtObj
+}
+
+func Test() {
+    println("Test")
+}
+
+func CreateDevice() => *Device {
+    d: Device
+    d._extref = js.WrapExtObj(jsCreateDevice())
+    return &d
+}
+
+func Device.CreateShaderModule(code: string) => *ShaderModule {
+    s: ShaderModule
+    s._extref = js.WrapExtObj(jsCreateShaderModule(this._extref.GetHandle(), code))
+    return &s
+}
+
+func Device.CreateBuffer(byteLen: uint, usage: BufferUsage) => *Buffer {
+    b: Buffer
+    b._device = this._extref
+    b._extref = js.WrapExtObj(jsCreateBuffer(this._extref.GetHandle(), byteLen, usage))
+    return &b
+}
+
+func GetPreferredCanvasFormat() => TextureFormat {
+    return jsGetPreferredCanvasFormat()
+}

@@ -1,0 +1,7 @@
+
+import "js"
+
+type ShaderModule struct {
+    _extref: js.ExtObj
+}
+
