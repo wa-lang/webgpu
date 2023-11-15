@@ -1,5 +1,21 @@
 
+import "js"
 
-type FragTarget struct {
-    format: TextureFormat
+
+/*
+不能使用该类型直接声明值，需通过 NewFragmentTarget() 创建
+*/
+type FragmentTarget struct {
+    js.ExtObj
+}
+
+func NewFragmentTarget() => FragmentTarget {
+    ft: FragmentTarget
+    ft.ExtObj = js.NewExtObj()
+
+    return ft
+}
+
+func FragmentTarget.SetFormat(format: TextureFormat) {
+    this.SetMember_string("format", textureFormatSymbols[format])
 }

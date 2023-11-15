@@ -1,0 +1,129 @@
+
+import "js"
+
+type Color struct {
+    r, g, b, a: f32
+}
+
+type LoadOp u32
+
+const (
+    LoadOp_clear = iota
+    LoadOp_load
+)
+
+global loadOpSymbols = [...]string {
+    LoadOp_clear: "clear",
+    LoadOp_load:  "load",
+}
+
+type StoreOp u32
+
+const (
+    StoreOp_store = iota
+    StoreOp_discard
+)
+
+global storeOpSymbols = [...]string {
+    StoreOp_store:   "store",
+    StoreOp_discard: "discard",
+}
+
+type RenderPassDesc_ColorAttchment struct {
+    ClearValue: Color
+    LoadOp: LoadOp
+    StoreOp: StoreOp
+    View: TextureView
+}
+
+/*
+不能使用该类型直接声明值，需通过 NewRenderPassDesc() 创建
+该对象需每帧重建
+*/
+type RenderPassDesc struct {
+    js.ExtObj
+}
+
+func NewRenderPassDesc() => RenderPassDesc {
+    rpd: RenderPassDesc
+    rpd.ExtObj = js.NewExtObj()
+
+    return rpd
+}
+
+func RenderPassDesc.SetColorAttachments(attachments: []RenderPassDesc_ColorAttchment) {
+    va := js.NewExtArray()
+    for _, a := range attachments {
+        vo := js.NewExtObj()
+
+        {
+            vc := js.NewExtObj()
+            vc.SetMember_f32("r", a.ClearValue.r)
+            vc.SetMember_f32("g", a.ClearValue.g)
+            vc.SetMember_f32("b", a.ClearValue.b)
+            vc.SetMember_f32("a", a.ClearValue.a)
+            vo.SetMember_obj("clearValue", vc)
+        }
+
+        vo.SetMember_string("loadOp", loadOpSymbols[a.LoadOp])
+        vo.SetMember_string("storeOp", storeOpSymbols[a.StoreOp])
+        vo.SetMember_obj("view", a.View.ExtObj)
+
+        va.Append_obj(vo)
+    }
+
+    this.SetMember_obj("colorAttachments", va.ExtObj)
+}
+
+/*
+不能使用该类型直接声明值，需通过 CommandEncoder.BeginRenderPass() 创建
+该对象需每帧重建
+*/
+type RenderPassEncoder struct {
+    js.ExtObj
+}
+
+func RenderPassEncoder.SetPipeline(p: RenderPipeline) {
+    jsSetRenderPassPipeline(this.GetHandle(), p.GetHandle())
+}
+
+func RenderPassEncoder.SetVertexBuffer(vb: Buffer, offset, size: i32) {
+    jsSetRenderPassVertexBuffer(this.GetHandle(), vb.GetHandle(), offset, size)
+}
+
+func RenderPassEncoder.Draw(vertex_count: i32) {
+    jsDrawRenderPass(this.GetHandle(), vertex_count)
+}
+
+func RenderPassEncoder.End() {
+    jsEndRenderPass(this.GetHandle())
+}
+
+/*
+不能使用该类型直接声明值，需通过 Device.CreateCommandEncoder() 创建
+该对象需每帧重建
+*/
+type CommandEncoder struct {
+    js.ExtObj
+}
+
+func CommandEncoder.BeginRenderPass(desc: RenderPassDesc) => RenderPassEncoder {
+    rpe: RenderPassEncoder
+    rpe.ExtObj = js.WrapExtObj(jsBeginRenderPass(this.GetHandle(), desc.GetHandle()))
+
+    return rpe
+}
+
+func CommandEncoder.Finish() => GPUCommandBuffer {
+    gb: GPUCommandBuffer
+    gb.ExtObj = js.WrapExtObj(jsFinishCommandEncoder(this.GetHandle()))
+
+    return gb
+}
+
+/*
+不能使用该类型直接声明值，需通过 CommandEncoder.Finish() 等创建
+该对象需每帧重建
+*/type GPUCommandBuffer struct {
+    js.ExtObj
+}

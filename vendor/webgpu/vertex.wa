@@ -94,21 +94,18 @@ global stepModeSymbols = [...]string{
 
 /*
 VertexLayout - 既 FVF 声明
+不能使用该类型直接声明值，需通过 NewVertexLayout() 创建
 */
 type VertexLayout struct {
-    stride: i32
-    stepMode: BufferStepMode
-    attributes: []VertexAttribute
-    _extref: js.ExtObj
+    js.ExtObj
 }
 
 func NewVertexLayout(stride: i32, stepMode: BufferStepMode, attributes: []VertexAttribute) => VertexLayout {
-    vl := VertexLayout{stride: stride, stepMode: stepMode}
-    vl.attributes = append(vl.attributes, attributes...)
+    vl : VertexLayout
 
-    vl._extref = js.NewExtObj()
-    vl._extref.SetMember_i32("arrayStride", stride)
-    vl._extref.SetMember_string("stepMode", stepModeSymbols[stepMode])
+    vl.ExtObj = js.NewExtObj()
+    vl.SetMember_i32("arrayStride", stride)
+    vl.SetMember_string("stepMode", stepModeSymbols[stepMode])
 
     va := js.NewExtArray()
     for _, attr := range attributes {
@@ -118,7 +115,7 @@ func NewVertexLayout(stride: i32, stepMode: BufferStepMode, attributes: []Vertex
         vo.SetMember_string("format", vertexFormatSymbols[attr.Format])
         va.Append_obj(vo)
     }
-    vl._extref.SetMember_obj("attributes", va.ExtObj)
+    vl.SetMember_obj("attributes", va.ExtObj)
 
     return vl
 }

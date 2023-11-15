@@ -79,6 +79,22 @@ func ExtObj.SetMember_i32(member_name: string, value: i32) {
 }
 
 /*
+JS 导入方法，用于向一个对象中添加 f32 型的成员
+ h: 对象在对象池中的id
+ member_name: 成员名字
+ value: 成员的值
+*/
+#wa:import extobj set_member_f32
+func jsSetMember_f32(h: Handle, member_name: string, value: f32)
+
+/*
+向一个 ExtObj 对象中添加 f32 型的成员，jsSetMember_f32的封装
+*/
+func ExtObj.SetMember_f32(member_name: string, value: f32) {
+    jsSetMember_f32(this.GetHandle(), member_name, value)
+}
+
+/*
 JS 导入方法，用于向一个对象中添加 string 型的成员
  h: 对象在对象池中的id
  member_name: 成员名字

@@ -1,8 +1,11 @@
 
 import "js"
 
+/*
+不能使用该类型直接声明值，需通过 CreateDevice() 创建
+*/
 type Device struct {
-    _extref: js.ExtObj
+    js.ExtObj
 }
 
 func Test() {
@@ -11,23 +14,37 @@ func Test() {
 
 func CreateDevice() => *Device {
     d: Device
-    d._extref = js.WrapExtObj(jsCreateDevice())
+    d.ExtObj = js.WrapExtObj(jsCreateDevice())
     return &d
 }
 
-func Device.CreateShaderModule(code: string) => *ShaderModule {
+func Device.CreateShaderModule(code: string) => ShaderModule {
     s: ShaderModule
-    s._extref = js.WrapExtObj(jsCreateShaderModule(this._extref.GetHandle(), code))
-    return &s
+    s._extref = js.WrapExtObj(jsCreateShaderModule(this.GetHandle(), code))
+    return s
 }
 
-func Device.CreateBuffer(byteLen: uint, usage: BufferUsage) => *Buffer {
+func Device.CreateBuffer(byteLen: i32, usage: BufferUsage) => Buffer {
     b: Buffer
-    b._device = this._extref
-    b._extref = js.WrapExtObj(jsCreateBuffer(this._extref.GetHandle(), byteLen, usage))
-    return &b
+    b._device = this.ExtObj
+    b.ExtObj = js.WrapExtObj(jsCreateBuffer(this.GetHandle(), byteLen, usage))
+    return b
 }
 
-func GetPreferredCanvasFormat() => TextureFormat {
-    return jsGetPreferredCanvasFormat()
+func Device.CreateRenderPipeline(desc: *PipelineDesc) => RenderPipeline {
+    p: RenderPipeline
+    p.ExtObj = js.WrapExtObj(jsCreatePipeline(this.GetHandle(), desc.GetHandle()))
+
+    return p
+}
+
+func Device.CreateCommandEncoder() => CommandEncoder {
+    c: CommandEncoder
+    c.ExtObj = js.WrapExtObj(jsCreateCommandEncoder(this.GetHandle()))
+
+    return c
+}
+
+func Device.Submit(gb: GPUCommandBuffer) {
+    jsSubmit(this.GetHandle(), gb.GetHandle())
 }

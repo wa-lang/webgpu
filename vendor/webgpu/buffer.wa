@@ -16,11 +16,14 @@ const (
     BufferUsage_QUERY_RESOLVE:  BufferUsage = 512
 )
 
+/*
+不能使用该类型直接声明值，需通过 Device.CreateBuffer() 创建
+*/
 type Buffer struct {
     _device: js.ExtObj
-    _extref: js.ExtObj
+    js.ExtObj
 }
 
-func Buffer.Write(offset: uint, data: []byte) {
-    jsWriteBuffer(this._device.GetHandle(), this._extref.GetHandle(), offset, data)
+func Buffer.Write(offset: i32, data: []byte) {
+    jsWriteBuffer(this._device.GetHandle(), this.GetHandle(), offset, data)
 }

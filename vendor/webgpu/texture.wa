@@ -1,4 +1,5 @@
 
+import "js"
 
 type TextureFormat u32
 
@@ -196,4 +197,25 @@ global textureFormatSymbols = [...]string{
     TextureFormat_astc_12x10_unorm_srgb: "astc-12x10-unorm-srgb",
     TextureFormat_astc_12x12_unorm: "astc-12x12-unorm",
     TextureFormat_astc_12x12_unorm_srgb: "astc-12x12-unorm-srgb",
+}
+
+/*
+不能使用该类型直接声明值，需通过其它函数创建
+*/
+type Texture struct {
+    js.ExtObj
+}
+
+func Texture.CreateView() => TextureView {
+    v: TextureView
+    v.ExtObj = js.WrapExtObj(jsCreateTextureView(this.GetHandle()))
+
+    return v
+}
+
+/*
+不能使用该类型直接声明值，需通过 Texture.CreateView() 创建
+*/
+type TextureView struct {
+    js.ExtObj
 }

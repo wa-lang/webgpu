@@ -1,0 +1,54 @@
+
+import "js"
+
+type AlphaMode u32
+
+const (
+    AlphaMode_opaque = iota
+    AlphaMode_premultiplied
+)
+
+global alphaModeSymbols = [...]string{
+    AlphaMode_opaque:        "opaque",
+    AlphaMode_premultiplied: "premultiplied",
+}
+
+type ContexConfig struct {
+    Device: Device
+    Format: TextureFormat
+    AlphaMode: AlphaMode
+}
+
+/*
+不能使用该类型直接声明值，需通过 QueryContex 创建
+*/
+type Contex struct {
+    js.ExtObj
+}
+
+func QueryContex(canvas_selector: string) => Contex {
+    c: Contex
+    c.ExtObj = js.WrapExtObj(jsQueryContex(canvas_selector))
+
+    return c
+}
+
+func Contex.Configure(conf: ContexConfig) {
+    vo := js.NewExtObj()
+    vo.SetMember_obj("device", conf.Device.ExtObj)
+    vo.SetMember_string("format", textureFormatSymbols[conf.Format])
+    vo.SetMember_string("alphaMode", alphaModeSymbols[conf.AlphaMode])
+
+    jsConfigureContex(this.GetHandle(), vo.GetHandle())
+}
+
+func Contex.GetCurrentTexture() => Texture {
+    t: Texture
+    t.ExtObj = js.WrapExtObj(jsGetContexCurrentTexture(this.GetHandle()))
+
+    return t
+}
+
+func GetPreferredCanvasFormat() => TextureFormat {
+    return jsGetPreferredCanvasFormat()
+}
