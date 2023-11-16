@@ -17,6 +17,10 @@ type PipelineDesc_fragment struct {
     Targets: []FragmentTarget
 }
 
+type PipelineDesc_primitive struct {
+    
+}
+
 /*
 不能使用该类型直接声明值，需通过 NewPipelineDesc() 创建
 */

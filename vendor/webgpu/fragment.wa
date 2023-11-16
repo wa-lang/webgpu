@@ -9,13 +9,10 @@ type FragmentTarget struct {
     js.ExtObj
 }
 
-func NewFragmentTarget() => FragmentTarget {
+func NewFragmentTarget(format: TextureFormat) => FragmentTarget {
     ft: FragmentTarget
     ft.ExtObj = js.NewExtObj()
 
+    ft.SetMember_string("format", textureFormatSymbols[format])
     return ft
-}
-
-func FragmentTarget.SetFormat(format: TextureFormat) {
-    this.SetMember_string("format", textureFormatSymbols[format])
 }

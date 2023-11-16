@@ -2,7 +2,7 @@
 import "js"
 
 type Color struct {
-    r, g, b, a: f32
+    R, G, B, A: f32
 }
 
 type LoadOp u32
@@ -58,10 +58,10 @@ func RenderPassDesc.SetColorAttachments(attachments: []RenderPassDesc_ColorAttch
 
         {
             vc := js.NewExtObj()
-            vc.SetMember_f32("r", a.ClearValue.r)
-            vc.SetMember_f32("g", a.ClearValue.g)
-            vc.SetMember_f32("b", a.ClearValue.b)
-            vc.SetMember_f32("a", a.ClearValue.a)
+            vc.SetMember_f32("r", a.ClearValue.R)
+            vc.SetMember_f32("g", a.ClearValue.G)
+            vc.SetMember_f32("b", a.ClearValue.B)
+            vc.SetMember_f32("a", a.ClearValue.A)
             vo.SetMember_obj("clearValue", vc)
         }
 
@@ -79,23 +79,23 @@ func RenderPassDesc.SetColorAttachments(attachments: []RenderPassDesc_ColorAttch
 不能使用该类型直接声明值，需通过 CommandEncoder.BeginRenderPass() 创建
 该对象需每帧重建
 */
-type RenderPassEncoder struct {
+type RenderPass struct {
     js.ExtObj
 }
 
-func RenderPassEncoder.SetPipeline(p: RenderPipeline) {
+func RenderPass.SetPipeline(p: RenderPipeline) {
     jsSetRenderPassPipeline(this.GetHandle(), p.GetHandle())
 }
 
-func RenderPassEncoder.SetVertexBuffer(vb: Buffer, offset, size: i32) {
-    jsSetRenderPassVertexBuffer(this.GetHandle(), vb.GetHandle(), offset, size)
+func RenderPass.SetVertexBuffer(slot: i32, vb: Buffer) {
+    jsSetRenderPassVertexBuffer(this.GetHandle(), slot, vb.GetHandle())
 }
 
-func RenderPassEncoder.Draw(vertex_count: i32) {
+func RenderPass.Draw(vertex_count: i32) {
     jsDrawRenderPass(this.GetHandle(), vertex_count)
 }
 
-func RenderPassEncoder.End() {
+func RenderPass.End() {
     jsEndRenderPass(this.GetHandle())
 }
 
@@ -107,11 +107,11 @@ type CommandEncoder struct {
     js.ExtObj
 }
 
-func CommandEncoder.BeginRenderPass(desc: RenderPassDesc) => RenderPassEncoder {
-    rpe: RenderPassEncoder
-    rpe.ExtObj = js.WrapExtObj(jsBeginRenderPass(this.GetHandle(), desc.GetHandle()))
+func CommandEncoder.BeginRenderPass(desc: RenderPassDesc) => RenderPass {
+    rp: RenderPass
+    rp.ExtObj = js.WrapExtObj(jsBeginRenderPass(this.GetHandle(), desc.GetHandle()))
 
-    return rpe
+    return rp
 }
 
 func CommandEncoder.Finish() => GPUCommandBuffer {

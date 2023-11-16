@@ -38,7 +38,7 @@ func jsBeginRenderPass(command_encoder, render_pass_desc: js.Handle) => js.Handl
 func jsSetRenderPassPipeline(pass_encoder, pipeline: js.Handle)
 
 #wa:import webgpu set_render_pass_vertex_buffer
-func jsSetRenderPassVertexBuffer(pass_encoder, buffer: js.Handle, offset: i32, size: i32)
+func jsSetRenderPassVertexBuffer(render_pass: js.Handle, slot: i32, buffer: js.Handle)
 
 #wa:import webgpu draw_render_pass
 func jsDrawRenderPass(pass_encoder: js.Handle, vertex_count: i32)

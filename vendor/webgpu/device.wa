@@ -12,10 +12,10 @@ func Test() {
     println("Test")
 }
 
-func CreateDevice() => *Device {
+func CreateDevice() => Device {
     d: Device
     d.ExtObj = js.WrapExtObj(jsCreateDevice())
-    return &d
+    return d
 }
 
 func Device.CreateShaderModule(code: string) => ShaderModule {
@@ -31,7 +31,7 @@ func Device.CreateBuffer(byteLen: i32, usage: BufferUsage) => Buffer {
     return b
 }
 
-func Device.CreateRenderPipeline(desc: *PipelineDesc) => RenderPipeline {
+func Device.CreateRenderPipeline(desc: PipelineDesc) => RenderPipeline {
     p: RenderPipeline
     p.ExtObj = js.WrapExtObj(jsCreatePipeline(this.GetHandle(), desc.GetHandle()))
 
