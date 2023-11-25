@@ -26,6 +26,15 @@ extobj: new function() {
   this.set_obj = (h, obj) => {
     this._obj_buf[h] = obj;
   }
+  this.query_selector = (sel_b, sel_d, sel_l) => {
+    const selector = app._mem_util.get_string(sel_d, sel_l);
+    const obj = document.querySelector(selector);
+    if (obj) {
+      return this.insert_obj(obj);
+    } else {
+      return 0;
+    }
+  }
   this.set_member_f32 = (h, member_name_b, member_name_d, member_name_l, value) => {
     let member_name = app._mem_util.get_string(member_name_d, member_name_l);
     this._obj_buf[h][member_name] = value;

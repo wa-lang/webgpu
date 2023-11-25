@@ -1,0 +1,6 @@
+
+import "js"
+
+#wa:import canvas get_context2d
+func jsGetContext2D(canvas: js.Handle) => js.Handle
+

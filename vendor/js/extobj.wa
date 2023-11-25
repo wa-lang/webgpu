@@ -37,6 +37,12 @@ JS 导入方法，用于创建一个空 JS 对象，其将对象存入对象池�
 func jsNewObj() => Handle
 
 /*
+JS 导入方法，用于查询宿主 document 的 DOM 对象
+*/
+#wa:import extobj query_selector
+func QuerySelector(sel: string) => Handle
+
+/*
 JS 导入方法，用于释放对象池中的指定对象，如果该对象持有其它资源（比如GpuTexture），应执行相应清理动作
 当 h 指定的对象不再被凹内部引用时，该方法将被触发
 当对象被释放后，其在对象池中的 id 应被回收，后续创建新对象时可复用，避免对象池无限增大
@@ -196,16 +202,16 @@ func ExtArray.Append_obj(value: ExtObj) {
 例如若希望生成一个 JS 对象如下：
 ```js
 {
+    a: [
+        1,
+        {k: 999}
+    ]
     i: 42
     s: "Hello"
     o: {
         m1: 13
         m2: "ff"
     }
-    a: [
-        1,
-        {k: 999}
-    ]
 }
 ```
 
