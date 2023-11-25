@@ -11,5 +11,20 @@ canvas: new function() {
     return 0;
   }
 
+  this.set_fill_style = (ctx_handle, style_b, style_d, style_l) => {
+    if (ctx_handle == 0) return;
+
+    const ctx = app._extobj.get_obj(ctx_handle);
+    const style = app._mem_util.get_string(style_d, style_l);
+    ctx.fillStyle = style;
+  }
+
+  this.fill_rect = (ctx_handle, x, y, w, h) => {
+    if (ctx_handle == 0) return;
+
+    const ctx = app._extobj.get_obj(ctx_handle);
+    ctx.fillRect(x, y, w, h);
+  }
+
   app._canvas = this;
 },

@@ -39,3 +39,18 @@ type Context2D struct {
     js.ExtObj
 }
 
+func Context2D.SetFillStyle(style: string) {
+    jsSetFillStyle(this.GetHandle(), style)
+}
+
+func Context2D.FillRect(x, y, w, h: i32) {
+    jsFillRect(this.GetHandle(), x, y, w, h)
+}
+
+/*
+    c, _ := canvas.QueryCanvas("#canvas")
+    ctx, _ := c.GetContext2D()
+
+    ctx.SetFillStyle("green")
+    ctx.FillRect(0, 0, 50, 50)
+*/
