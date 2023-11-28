@@ -1,8 +1,8 @@
 
 import "js"
 
-#wa:import webgpu query_contex
-func jsQueryContex(canvas_selector: string) => js.Handle
+#wa:import webgpu get_gpu_contex
+func jsGetGpuContex(canvas: js.Handle) => js.Handle
 
 #wa:import webgpu configure_contex
 func jsConfigureContex(contex, config: js.Handle)
@@ -19,8 +19,8 @@ func jsCreateShaderModule(device: js.Handle, code: string) => js.Handle
 #wa:import webgpu create_buffer
 func jsCreateBuffer(device: js.Handle, byteLen: i32, usage: BufferUsage) => js.Handle
 
-#wa:import webgpu create_pipeline
-func jsCreatePipeline(device, pl_desc: js.Handle) => js.Handle
+#wa:import webgpu create_render_pipeline
+func jsCreateRenderPipeline(device, pl_desc: js.Handle) => js.Handle
 
 #wa:import webgpu create_command_encoder
 func jsCreateCommandEncoder(device: js.Handle) => js.Handle
@@ -35,20 +35,19 @@ func jsFinishCommandEncoder(command_encoder: js.Handle) => js.Handle
 func jsBeginRenderPass(command_encoder, render_pass_desc: js.Handle) => js.Handle
 
 #wa:import webgpu set_render_pass_pipeline
-func jsSetRenderPassPipeline(pass_encoder, pipeline: js.Handle)
+func jsSetRenderPassPipeline(render_pass, pipeline: js.Handle)
 
 #wa:import webgpu set_render_pass_vertex_buffer
 func jsSetRenderPassVertexBuffer(render_pass: js.Handle, slot: i32, buffer: js.Handle)
 
 #wa:import webgpu draw_render_pass
-func jsDrawRenderPass(pass_encoder: js.Handle, vertex_count: i32)
+func jsDrawRenderPass(render_pass: js.Handle, vertex_count: i32)
 
 #wa:import webgpu end_render_pass
-func jsEndRenderPass(pass_encoder: js.Handle)
+func jsEndRenderPass(render_pass: js.Handle)
 
 #wa:import webgpu write_buffer
 func jsWriteBuffer(device, buffer: js.Handle, offset: i32, data: []byte)
-
 
 #wa:import webgpu create_texture_view
 func jsCreateTextureView(texture: js.Handle) => js.Handle

@@ -1,9 +1,30 @@
 // 版权 @2023 凹语言 作者。保留所有权利。
 
 import "webgpu"
+import "js"
 
 func main {
 	println("你好，GPU")
+}
+
+func TestExtObj() {
+	obj := js.NewExtObj()
+    obj.SetMember_i32("i", 42)
+    obj.SetMember_string("s", "Hello")
+
+    mo := js.NewExtObj()
+    mo.SetMember_i32("m1", 13)
+    mo.SetMember_string("m2", "ff")
+
+    obj.SetMember_obj("o", mo)
+
+    ao := js.NewExtArray()
+    ao.Append_i32(1)
+    so := js.NewExtObj()
+    so.SetMember_i32("k", 999)
+    ao.Append_obj(so)
+
+    obj.SetMember_obj("a", ao.ExtObj)
 }
 
 const shaderCode = `
@@ -62,8 +83,7 @@ func InitResource() {
 	}
 
 	vertexBuffer = device.CreateBuffer(32 * 3, webgpu.BufferUsage_VERTEX | webgpu.BufferUsage_COPY_DST)
-	//Todo:
-	//vertexBuffer.Write(0, vertices[:])
+	vertexBuffer.Write(0, raw(vertices[:]))
 
 	vertexAttributes := [...]webgpu.VertexAttribute{
 		webgpu.VertexAttribute{Location: 0, Offset: 0, Format: webgpu.VertexFormat_float32x4},

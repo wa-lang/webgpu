@@ -33,7 +33,7 @@ func Device.CreateBuffer(byteLen: i32, usage: BufferUsage) => Buffer {
 
 func Device.CreateRenderPipeline(desc: PipelineDesc) => RenderPipeline {
     p: RenderPipeline
-    p.ExtObj = js.WrapExtObj(jsCreatePipeline(this.GetHandle(), desc.GetHandle()))
+    p.ExtObj = js.WrapExtObj(jsCreateRenderPipeline(this.GetHandle(), desc.GetHandle()))
 
     return p
 }

@@ -27,10 +27,9 @@ type Contex struct {
 }
 
 func QueryContex(canvas_selector: string) => Contex {
-    c: Contex
-    c.ExtObj = js.WrapExtObj(jsQueryContex(canvas_selector))
-
-    return c
+    ctx: Contex
+    ctx.ExtObj = js.WrapExtObj(jsGetGpuContex(js.QuerySelector(canvas_selector)))
+    return ctx
 }
 
 func Contex.Configure(conf: ContexConfig) {
