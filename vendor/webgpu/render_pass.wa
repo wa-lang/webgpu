@@ -124,6 +124,7 @@ func CommandEncoder.Finish() => GPUCommandBuffer {
 /*
 不能使用该类型直接声明值，需通过 CommandEncoder.Finish() 等创建
 该对象需每帧重建
-*/type GPUCommandBuffer struct {
+*/
+type GPUCommandBuffer struct {
     js.ExtObj
 }

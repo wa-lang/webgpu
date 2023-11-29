@@ -7,26 +7,29 @@ func main {
 	println("你好，GPU")
 }
 
+global obj: js.ExtObj
+
 func TestExtObj() {
-	obj := js.NewExtObj()
+	obj = js.NewExtObj()  // obj.handle = 1
     obj.SetMember_i32("i", 42)
     obj.SetMember_string("s", "Hello")
 
-    mo := js.NewExtObj()
+    mo := js.NewExtObj()  // mo.handle = 2
     mo.SetMember_i32("m1", 13)
     mo.SetMember_string("m2", "ff")
 
     obj.SetMember_obj("o", mo)
 
-    ao := js.NewExtArray()
+    ao := js.NewExtArray() // ao.handle = 3
     ao.Append_i32(1)
-    so := js.NewExtObj()
+    so := js.NewExtObj() // so.handle = 4
     so.SetMember_i32("k", 999)
     ao.Append_obj(so)
 
     obj.SetMember_obj("a", ao.ExtObj)
 }
 
+//*
 const shaderCode = `
 struct VertexOut {
   @builtin(position) position : vec4f,
@@ -127,4 +130,4 @@ func Draw() {
 	renderPass.End()
 
 	device.Submit(commandEncoder.Finish())
-}
+}  //*/
