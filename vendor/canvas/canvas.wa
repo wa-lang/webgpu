@@ -47,6 +47,10 @@ func Context2D.FillRect(x, y, w, h: i32) {
     jsFillRect(this.GetHandle(), x, y, w, h)
 }
 
+func Context2D.PutImageData(x, y, w, h: i32, buf :[]u8) {
+    jsPutImageData(this.GetHandle(), x, y, w, h, buf)
+}
+
 /*
     c, _ := canvas.QueryCanvas("#canvas")
     ctx, _ := c.GetContext2D()

@@ -2,6 +2,7 @@
 
 import "webgpu"
 import "js"
+import "canvas"
 
 func main {
 	println("你好，GPU")
@@ -27,6 +28,34 @@ func TestExtObj() {
     ao.Append_obj(so)
 
     obj.SetMember_obj("a", ao.ExtObj)
+}
+
+func TestBytes(t: []u8, s: string) => (string, []u8, []u8) {
+    r := make([]u8, len(t)*2)
+    for i, v := range t {
+        r[i] = v
+        r[i + len(t)] = v
+    }
+    return "Hello", r, []u8(s)
+}
+
+func TestCanvas() {
+    c, _ := canvas.QueryCanvas("#gpuCanvas")
+    ctx, _ := c.GetContext2D()
+
+    //ctx.SetFillStyle("green")
+    //ctx.FillRect(0, 0, 50, 50)
+
+    buf := make([]u8, 256*256*4)
+    for x := 0; x < 256; x++ {
+        for y := 0; y < 256; y++ {
+            buf[(y*256+x)*4 + 0] = u8(x)
+            buf[(y*256+x)*4 + 1] = u8(x)
+            buf[(y*256+x)*4 + 2] = u8(y)
+            buf[(y*256+x)*4 + 3] = 255
+        }
+    }
+    ctx.PutImageData(0, 0, 256, 256, buf)
 }
 
 //*
