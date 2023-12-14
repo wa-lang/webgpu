@@ -18,17 +18,43 @@ func CreateDevice() => Device {
     return d
 }
 
+#wa:import webgpu device_ready
+func jsDeviceReady(device: js.Handle) => i32
+func Device.Ready() => bool {
+    return jsDeviceReady(this.GetHandle()) != 0
+}
+
 func Device.CreateShaderModule(code: string) => ShaderModule {
     s: ShaderModule
     s._extref = js.WrapExtObj(jsCreateShaderModule(this.GetHandle(), code))
     return s
 }
 
-func Device.CreateBuffer(byteLen: i32, usage: BufferUsage) => Buffer {
+func Device.CreateBuffer(byteLen: int, usage: BufferUsage) => Buffer {
     b: Buffer
     b._device = this.ExtObj
     b.ExtObj = js.WrapExtObj(jsCreateBuffer(this.GetHandle(), byteLen, usage))
     return b
+}
+
+func Device.CreateTexture(desc: TextureDesc) => Texture {
+    t: Texture
+    t.ExtObj = js.WrapExtObj(jsCreateTexture(this.GetHandle(), desc.GetHandle()))
+    return t
+}
+
+#wa:import webgpu create_sampler
+func jsCreateSampler(device, desc: js.Handle) => js.Handle
+func Device.CreateSampler(desc: SamplerDesc) => Sampler {
+    s: Sampler
+    s.ExtObj = js.WrapExtObj(jsCreateSampler(this.GetHandle(), desc.GetHandle()))
+    return s
+}
+
+#wa:import webgpu copy_external_image_to_texture
+func jsCopyExternalImageToTexture(device, src, dest: js.Handle)
+func Device.CopyExternalImageToTexture(src: js.ExtObj, dest: Texture) {
+    jsCopyExternalImageToTexture(this.GetHandle(), src.GetHandle(), dest.GetHandle())
 }
 
 func Device.CreateRenderPipeline(desc: PipelineDesc) => RenderPipeline {
@@ -38,9 +64,25 @@ func Device.CreateRenderPipeline(desc: PipelineDesc) => RenderPipeline {
     return p
 }
 
+func Device.CreateBindGroup(desc: BindGroupDesc) => BindGroup {
+    g: BindGroup
+    g.ExtObj = js.WrapExtObj(jsCreateBindGroup(this.GetHandle(), desc.GetHandle()))
+
+    return g
+}
+
 func Device.CreateCommandEncoder() => CommandEncoder {
     c: CommandEncoder
     c.ExtObj = js.WrapExtObj(jsCreateCommandEncoder(this.GetHandle()))
+
+    return c
+}
+
+#wa:import webgpu create_render_bundle_encoder
+func jsCreateRenderBundleEncoder(device, desc: js.Handle) => js.Handle
+func Device.CreateRenderBundleEncoder(desc: RenderBundleEncoderDesc) => PassEncoder {
+    c: PassEncoder
+    c.ExtObj = js.WrapExtObj(jsCreateRenderBundleEncoder(this.GetHandle(), desc.GetHandle()))
 
     return c
 }

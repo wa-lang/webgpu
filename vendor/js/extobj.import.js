@@ -35,11 +35,19 @@ extobj: new function() {
       return 0;
     }
   }
-  this.set_member_f32 = (h, member_name_b, member_name_d, member_name_l, value) => {
+  this.set_member_bool = (h, member_name_b, member_name_d, member_name_l, value) => {
+    let member_name = app._mem_util.get_string(member_name_d, member_name_l);
+    if (value === 0){
+      this._obj_buf[h][member_name] = false;
+    } else {
+      this._obj_buf[h][member_name] = true;
+    }
+  }
+  this.set_member_i32 = (h, member_name_b, member_name_d, member_name_l, value) => {
     let member_name = app._mem_util.get_string(member_name_d, member_name_l);
     this._obj_buf[h][member_name] = value;
   }
-  this.set_member_i32 = (h, member_name_b, member_name_d, member_name_l, value) => {
+  this.set_member_f32 = (h, member_name_b, member_name_d, member_name_l, value) => {
     let member_name = app._mem_util.get_string(member_name_d, member_name_l);
     this._obj_buf[h][member_name] = value;
   }

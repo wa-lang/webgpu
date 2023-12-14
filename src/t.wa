@@ -1,112 +1,128 @@
 // 版权 @2023 凹语言 作者。保留所有权利。
 
 import "webgpu"
+import "vec3"
+import "matrix"
+import "math"
+import "math/rand"
 import "js"
-import "canvas"
+
+const (
+	CanvasWidth = 512
+	CanvasHeight = 512
+	uniformBufferSize = 4 * 16
+)
 
 func main {
 	println("你好，GPU")
-}
-
-global obj: js.ExtObj
-
-func TestExtObj() {
-	obj = js.NewExtObj()  // obj.handle = 1
-    obj.SetMember_i32("i", 42)
-    obj.SetMember_string("s", "Hello")
-
-    mo := js.NewExtObj()  // mo.handle = 2
-    mo.SetMember_i32("m1", 13)
-    mo.SetMember_string("m2", "ff")
-
-    obj.SetMember_obj("o", mo)
-
-    ao := js.NewExtArray() // ao.handle = 3
-    ao.Append_i32(1)
-    so := js.NewExtObj() // so.handle = 4
-    so.SetMember_i32("k", 999)
-    ao.Append_obj(so)
-
-    obj.SetMember_obj("a", ao.ExtObj)
-}
-
-func TestBytes(t: []u8, s: string) => (string, []u8, []u8) {
-    r := make([]u8, len(t)*2)
-    for i, v := range t {
-        r[i] = v
-        r[i + len(t)] = v
-    }
-    return "Hello", r, []u8(s)
-}
-
-func TestCanvas() {
-    c, _ := canvas.QueryCanvas("#gpuCanvas")
-    ctx, _ := c.GetContext2D()
-
-    //ctx.SetFillStyle("green")
-    //ctx.FillRect(0, 0, 50, 50)
-
-    buf := make([]u8, 256*256*4)
-    for x := 0; x < 256; x++ {
-        for y := 0; y < 256; y++ {
-            buf[(y*256+x)*4 + 0] = u8(x)
-            buf[(y*256+x)*4 + 1] = u8(x)
-            buf[(y*256+x)*4 + 2] = u8(y)
-            buf[(y*256+x)*4 + 3] = 255
-        }
-    }
-    ctx.PutImageData(0, 0, 256, 256, buf)
+	vec3.T()
 }
 
 //*
 const shaderCode = `
-struct VertexOut {
+struct Uniforms {
+  viewProjectionMatrix : mat4x4f
+}
+@group(0) @binding(0) var<uniform> uniforms : Uniforms;
+
+@group(1) @binding(0) var<uniform> modelMatrix : mat4x4f;
+
+struct VertexInput {
+  @location(0) position : vec4f,
+  @location(1) normal : vec3f,
+  @location(2) uv : vec2f
+}
+
+struct VertexOutput {
   @builtin(position) position : vec4f,
-  @location(0) color : vec4f
+  @location(0) normal: vec3f,
+  @location(1) uv : vec2f,
 }
 
 @vertex
-fn vertex_main(@location(0) position: vec4f,
-               @location(1) color: vec4f) -> VertexOut
-{
-  var output : VertexOut;
-  output.position = position;
-  output.color = color;
+fn vertexMain(input: VertexInput) -> VertexOutput {
+  var output : VertexOutput;
+  output.position = uniforms.viewProjectionMatrix * modelMatrix * input.position;
+  output.normal = normalize((modelMatrix * vec4(input.normal, 0)).xyz);
+  output.uv = input.uv;
   return output;
 }
 
+@group(1) @binding(1) var meshSampler: sampler;
+@group(1) @binding(2) var meshTexture: texture_2d<f32>;
+
+// Static directional lighting
+const lightDir = vec3f(1, 1, 1);
+const dirColor = vec3(1);
+const ambientColor = vec3f(0.05);
+
 @fragment
-fn fragment_main(fragData: VertexOut) -> @location(0) vec4f
-{
-  return fragData.color;
+fn fragmentMain(input: VertexOutput) -> @location(0) vec4f {
+  let textureColor = textureSample(meshTexture, meshSampler, input.uv);
+  //let textureColor = vec4f(1, 0.5, 0.5, 1);
+
+  // Very simplified lighting algorithm.
+  let lightColor = saturate(ambientColor + max(dot(input.normal, lightDir), 0.0) * dirColor);
+
+  return vec4f(textureColor.rgb * lightColor, textureColor.a);
 }
 `
 
-type Vertex struct {
-	x, y, z, w: f32
-	r, g, b, a: f32
-}
-
-global vertices = [...]Vertex{
-	Vertex{ 0.0,  0.6, 0, 1, 1, 0, 0, 1 },
-	Vertex{-0.5, -0.6, 0, 1, 0, 1, 0, 1 },
- 	Vertex{ 0.5, -0.6, 0, 1, 0, 0, 1, 1},
-}
-
 global (
+	deviceCreated = false
 	device: webgpu.Device
+
+	resourceInitialized = false
 	shader: webgpu.ShaderModule
 	contex: webgpu.Contex
-	vertexBuffer: webgpu.Buffer
 	renderPipeline: webgpu.RenderPipeline
+	depthTexture: webgpu.Texture
+
+	uniformBuffer: webgpu.Buffer
+	frameBindGroup: webgpu.BindGroup
+
+	texPlanet, texMoon: webgpu.Texture
+	sampler: webgpu.Sampler
+
+	rbs: []Renderable
+
+	renderBundle: webgpu.RenderBundle
+
+	mRotation: f32
 )
 
-func InitDevice() {
-	device = webgpu.CreateDevice()
+func StepFrame() {
+	if !tryInitDevice() {
+		println("Device not ready.")
+		return
+	}
+
+	tryInitResource()
+
+	draw()
 }
 
-func InitResource() {
-	shader = device.CreateShaderModule(shaderCode)
+func tryInitDevice() => bool {
+	if deviceCreated {
+		return device.Ready()
+	}
+	println("Init device...")
+	device = webgpu.CreateDevice()
+	deviceCreated = true
+
+	rand.Seed(73543197)
+	return false
+}
+
+#wa:import gpu_sample get_image_bitmap
+func jsGetImageBitmap(id: i32) => js.Handle
+
+func tryInitResource() {
+	if resourceInitialized {
+		return
+	}
+	resourceInitialized = true
+	println("Init resource...")
 
 	contex = webgpu.QueryContex("#gpuCanvas")
 	{
@@ -114,32 +130,139 @@ func InitResource() {
 		contex.Configure(cc)
 	}
 
-	vertexBuffer = device.CreateBuffer(32 * 3, webgpu.BufferUsage_VERTEX | webgpu.BufferUsage_COPY_DST)
-	vertexBuffer.Write(0, raw(vertices[:]))
+	shader = device.CreateShaderModule(shaderCode)
 
-	vertexAttributes := [...]webgpu.VertexAttribute{
-		webgpu.VertexAttribute{Location: 0, Offset: 0, Format: webgpu.VertexFormat_float32x4},
-		webgpu.VertexAttribute{Location: 1, Offset: 16, Format: webgpu.VertexFormat_float32x4},
+	// pipeline:
+	{
+		pipelineDesc := webgpu.NewPipeLineDesc()
+		vertexAttributes := [...]webgpu.VertexAttribute{
+			webgpu.VertexAttribute{Location: 0, Offset: posOffset, Format: webgpu.VertexFormat_float32x3},  // pos
+			webgpu.VertexAttribute{Location: 1, Offset: norOffset, Format: webgpu.VertexFormat_float32x3},  // nor
+			webgpu.VertexAttribute{Location: 2, Offset: uvOffset, Format: webgpu.VertexFormat_float32x2},  // uv
+		}
+		vertexLayout := webgpu.NewVertexLayout(sphereVertexStride, webgpu.BufferStepMode_vertex, vertexAttributes[:])
+		pldVertex := webgpu.PipelineDesc_vertex{Module: shader, EntryPoint: "vertexMain"}
+		pldVertex.Layouts = append(pldVertex.Layouts, vertexLayout)
+
+		fragTarget := webgpu.NewFragmentTarget(webgpu.GetPreferredCanvasFormat())
+		pldFragment := webgpu.PipelineDesc_fragment{Module: shader, EntryPoint: "fragmentMain"}
+		pldFragment.Targets = append(pldFragment.Targets, fragTarget)
+
+		depthStencil := webgpu.NewPipelineDesc_depthStencil()
+		depthStencil.SetDepthWriteEnabled(true)
+		depthStencil.SetDepthCompare(webgpu.DepthCompare_less)
+		depthStencil.SetFormat(webgpu.TextureFormat_depth24plus)
+
+		pipelineDesc.SetVertex(pldVertex)
+		pipelineDesc.SetFragment(pldFragment)
+		pipelineDesc.SetDepthStencil(depthStencil)
+		renderPipeline = device.CreateRenderPipeline(pipelineDesc)
 	}
-	vertexLayout := webgpu.NewVertexLayout(32, webgpu.BufferStepMode_vertex, vertexAttributes[:])
-	pldVertex := webgpu.PipelineDesc_vertex{Module: shader, EntryPoint: "vertex_main"}
-	pldVertex.Layouts = append(pldVertex.Layouts, vertexLayout)
 
-	fragTarget := webgpu.NewFragmentTarget(webgpu.GetPreferredCanvasFormat())
-	pldFragment := webgpu.PipelineDesc_fragment{Module: shader, EntryPoint: "fragment_main"}
-	pldFragment.Targets = append(pldFragment.Targets, fragTarget)
+	{
+		d := webgpu.NewTextureDesc()
+		d.SetFormat(webgpu.TextureFormat_depth24plus)
+		d.SetSize([]i32{CanvasWidth, CanvasHeight})
+		d.SetUsage(webgpu.TextureUsage_RENDER_ATTACHMENT)
 
-	pipelineDesc := webgpu.NewPipeLineDesc()
-	pipelineDesc.SetVertex(pldVertex)
-	pipelineDesc.SetFragment(pldFragment)
+		depthTexture = device.CreateTexture(d)
+	}
 
-	renderPipeline = device.CreateRenderPipeline(pipelineDesc)
+	uniformBuffer = device.CreateBuffer(uniformBufferSize, webgpu.BufferUsage_UNIFORM | webgpu.BufferUsage_COPY_DST)
+	{
+		entries : []webgpu.BindGroupEntry
+
+		e0 := webgpu.NewBindGroupEntry()
+		e0.SetBinding(0)
+		e0.SetResource(webgpu.NewBufferBinding(uniformBuffer).ExtObj)
+		entries = append(entries, e0)
+
+		bg_desc := webgpu.NewBindGroupDesc()
+		bg_desc.SetLayout(renderPipeline.GetBindGroupLayout(0))
+		bg_desc.SetEntries(entries)
+
+		frameBindGroup = device.CreateBindGroup(bg_desc)
+	}
+
+	// Texture
+	{
+		texDesc := webgpu.NewTextureDesc()
+		texDesc.SetFormat(webgpu.TextureFormat_rgba8unorm)
+		texDesc.SetSize([]i32{2048, 1024})
+		texDesc.SetUsage(webgpu.TextureUsage_TEXTURE_BINDING | webgpu.TextureUsage_COPY_DST | webgpu.TextureUsage_RENDER_ATTACHMENT)
+		texPlanet = device.CreateTexture(texDesc)
+		texDesc.SetSize([]i32{512, 256})
+		texMoon = device.CreateTexture(texDesc)
+
+		device.CopyExternalImageToTexture(js.WrapExtObj(jsGetImageBitmap(0)), texPlanet)
+		device.CopyExternalImageToTexture(js.WrapExtObj(jsGetImageBitmap(1)), texMoon)
+	}
+
+	{
+		sd := webgpu.NewSamplerDesc()
+		sd.SetMagFilter(webgpu.Filter_linear)
+		sd.SetMinFilter(webgpu.Filter_linear)
+
+		sampler = device.CreateSampler(sd)
+	}
+
+	planet := createSphereRenderable(device, 1.0, 32, 16, 0)
+	mat: matrix.Matrix
+	mat.Identity()
+	planet.bg = createBindGroup(device, renderPipeline, mat, texPlanet)
+	rbs = append(rbs, planet)
+
+	asteroids := [...]Renderable{
+		createSphereRenderable(device, 0.01, 8, 6, 0.15),
+		createSphereRenderable(device, 0.013, 8, 6, 0.15),
+		createSphereRenderable(device, 0.017, 8, 6, 0.15),
+		createSphereRenderable(device, 0.02, 8, 6, 0.15),
+		createSphereRenderable(device, 0.03, 16, 8, 0.15),
+	}
+
+	for i := 0; i < 5000; i++ {
+		radius := rand.Float32() * 1.7 + 1.25
+		angle := rand.Float32() * math.Pi * 2
+		x := f32(math.Sin(f64(angle))) * radius
+		y := (rand.Float32() - 0.5) * 0.05
+		z := f32(math.Cos(f64(angle))) * radius
+
+		r0 := matrix.NewRotateAxis(vec3.Vec3{1, 0, 0}, rand.Float32() * math.Pi)
+		r1 := matrix.NewRotateAxis(vec3.Vec3{0, 1, 0}, rand.Float32() * math.Pi)
+		t := matrix.NewTranslate(vec3.Vec3{x, y, z})
+
+		r0.Mul(r1)
+		r0.Mul(t)
+		rb := asteroids[i % len(asteroids)]
+		rb.bg = createBindGroup(device, renderPipeline, r0, texMoon)
+
+		rbs = append(rbs, rb)
+	}
+
+	rbe_desc := webgpu.NewRenderBundleEncoderDesc()
+	rbe_desc.SetColorFormats([]webgpu.TextureFormat{webgpu.GetPreferredCanvasFormat()})
+	rbe_desc.SetDepthStencilFormat(webgpu.TextureFormat_depth24plus)
+	renderBundleEncoder := device.CreateRenderBundleEncoder(rbe_desc)
+	renderScene(renderBundleEncoder)
+	renderBundle = renderBundleEncoder.Finish()
 }
 
-func Draw() {
+func draw() {
+	matMVP := matrix.NewRotateAxis(vec3.Vec3{0, 1, 0}, mRotation)
+	mRotation += 0.001
+	rT := matrix.NewRotateAxis(vec3.Vec3{1, 0, 1}, 0.1 * math.Pi)
+	matMVP.Mul(rT)
+
+	matView := matrix.NewCameraTransform(vec3.Vec3{0, 0, 4}, vec3.Vec3{0, 0, 0}, vec3.Vec3{0, 1, 0})
+	matMVP.Mul(matView)
+
+	matProj := matrix.NewPerspective(2 * math.Pi / 5, 1, 0.5, 100)
+	matMVP.Mul(matProj)
+	uniformBuffer.Write(0, raw([][4][4]f32{matMVP.M}))
+	
 	colorAttachments := [...]webgpu.RenderPassDesc_ColorAttchment{
 		webgpu.RenderPassDesc_ColorAttchment{
-			ClearValue: webgpu.Color{0, 0.5, 1.0, 1.0},
+			ClearValue: webgpu.Color{0, 0, 0, 1},
 			LoadOp: webgpu.LoadOp_clear,
 			StoreOp: webgpu.StoreOp_store,
 		},
@@ -147,16 +270,35 @@ func Draw() {
 	contexTexture := contex.GetCurrentTexture()
 	colorAttachments[0].View = contexTexture.CreateView()
 
+	depthStencilAttachment := webgpu.RenderPassDesc_DepthStencilAttachment{
+		ClearValue: 1.0,
+		LoadOp: webgpu.LoadOp_clear,
+		StoreOp: webgpu.StoreOp_store,
+		View: depthTexture.CreateView(),
+	}
+
 	renderPassDesc := webgpu.NewRenderPassDesc()
 	renderPassDesc.SetColorAttachments(colorAttachments[:])
+	renderPassDesc.SetDepthStencilAttachment(depthStencilAttachment)
 
 	commandEncoder := device.CreateCommandEncoder()
+	encoder := commandEncoder.BeginRenderPass(renderPassDesc)
 
-	renderPass := commandEncoder.BeginRenderPass(renderPassDesc)
-	renderPass.SetPipeline(renderPipeline)
-	renderPass.SetVertexBuffer(0, vertexBuffer)
-	renderPass.Draw(3)
-	renderPass.End()
+	//renderScene(encoder)
+	encoder.ExecuteBundles([]webgpu.RenderBundle{renderBundle})
 
+	encoder.End()
 	device.Submit(commandEncoder.Finish())
-}  //*/
+}
+
+func renderScene(encoder: webgpu.PassEncoder) {
+	encoder.SetPipeline(renderPipeline)
+	encoder.SetBindGroup(0, frameBindGroup)
+
+	for _, rb := range(rbs) {
+		encoder.SetBindGroup(1, rb.bg)
+		encoder.SetVertexBuffer(0, rb.vb)
+		encoder.SetIndexBuffer(rb.ib, "uint16")
+		encoder.DrawIndexed(rb.icount)
+	}
+}

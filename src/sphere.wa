@@ -1,0 +1,145 @@
+// 版权 @2023 凹语言 作者。保留所有权利。
+
+import "vec3"
+import "matrix"
+import "math"
+import "webgpu"
+import "math/rand"
+
+const (
+	sphereVertexStride = 8 * 4
+	posOffset = 0
+	norOffset = 3 * 4
+	uvOffset = 6 * 4
+)
+
+type sphereVertex struct {
+	pos: vec3.Vec3
+	nor: vec3.Vec3
+	u, v: f32
+}
+
+type sphereMesh struct {
+	vertex: []sphereVertex
+	index: []u16
+}
+
+func createSphere(radius: f32, w, h: int, radiu_random: f32) => *sphereMesh {
+	mesh: sphereMesh
+	mesh.vertex = make([]sphereVertex, (w + 1) * (h + 1))
+	grid: [][]u16
+
+	vertex: sphereVertex
+	first_pos: vec3.Vec3
+	vertex_count: u16
+
+	for y := 0; y <= h; y++ {
+		row_index := make([]u16, w + 1)
+		v := f32(y) / f32(h)
+		u_off: f32
+		if y == 0 {
+			u_off = 0.5 / f32(w)
+		} else if y == h {
+			u_off = -0.5 / f32(w)
+		}
+
+		for x := 0; x <= w; x++ {
+			u := f32(x) / f32(w)
+
+			if x == w {
+				vertex.pos = first_pos
+			} else if x == 0 || (y != 0 && y != h) {
+				r := radius + (rand.Float32() - 0.5) * 2 * radiu_random * radius
+				vertex.pos.X = -r * f32(math.Cos(f64(u) * math.Pi * 2) * math.Sin(f64(v) * math.Pi))
+				vertex.pos.Y = r * f32(math.Cos(f64(v) * math.Pi))
+				vertex.pos.Z = r * f32(math.Sin(f64(u) * math.Pi * 2) * math.Sin(f64(v) * math.Pi))
+
+				if x == 0 {
+					first_pos = vertex.pos
+				}
+			}
+
+			vertex.nor = vec3.Normalize(vertex.pos)
+			vertex.u = u + u_off
+			vertex.v = 1 - v
+			row_index[x] = vertex_count
+			mesh.vertex[vertex_count] = vertex
+
+			vertex_count++
+		}
+
+		grid = append(grid, row_index)
+	}
+
+	for y := 0; y < h; y++ {
+		for x := 0; x < w; x++ {
+			a := grid[y][x + 1]
+			b := grid[y][x]
+			c := grid[y + 1][x]
+			d := grid[y + 1][x + 1]
+
+			if y != 0 {
+				mesh.index = append(mesh.index, a)
+				mesh.index = append(mesh.index, b)
+				mesh.index = append(mesh.index, d)
+			}
+			if y != h - 1 {
+				mesh.index = append(mesh.index, b)
+				mesh.index = append(mesh.index, c)
+				mesh.index = append(mesh.index, d)				
+			}
+		}
+	}
+
+	return &mesh
+}
+
+type Renderable struct {
+	vb: webgpu.Buffer
+	ib: webgpu.Buffer
+	icount: i32
+	bg: webgpu.BindGroup
+}
+
+func createSphereRenderable(device: webgpu.Device, radius: f32, w, h: int, random: f32) => Renderable {
+	mesh := createSphere(radius, w, h, random)
+
+	rb: Renderable
+
+	rb.vb = device.CreateBuffer(sphereVertexStride * len(mesh.vertex), webgpu.BufferUsage_VERTEX | webgpu.BufferUsage_COPY_DST)
+	rb.vb.Write(0, raw(mesh.vertex))
+
+	rb.ib = device.CreateBuffer(2 * len(mesh.index), webgpu.BufferUsage_INDEX | webgpu.BufferUsage_COPY_DST)
+	rb.ib.Write(0, raw(mesh.index))
+
+	rb.icount = i32(len(mesh.index))
+	return rb
+}
+
+func createBindGroup(device: webgpu.Device, pipeline: webgpu.RenderPipeline, mat: matrix.Matrix, texture: webgpu.Texture) => webgpu.BindGroup {
+	uniformBuffer := device.CreateBuffer(uniformBufferSize, webgpu.BufferUsage_UNIFORM | webgpu.BufferUsage_COPY_DST)
+	uniformBuffer.Write(0, raw([][4][4]f32{mat.M}))
+
+	entries : []webgpu.BindGroupEntry
+
+	e0 := webgpu.NewBindGroupEntry()
+	e0.SetBinding(0)
+	e0.SetResource(webgpu.NewBufferBinding(uniformBuffer).ExtObj)
+	entries = append(entries, e0)
+
+	e1 := webgpu.NewBindGroupEntry()
+	e1.SetBinding(1)
+	e1.SetResource(sampler.ExtObj)
+	entries = append(entries, e1)
+
+	e2 := webgpu.NewBindGroupEntry()
+	e2.SetBinding(2)
+	e2.SetResource(texture.CreateView().ExtObj)
+	entries = append(entries, e2)
+
+	bg_desc := webgpu.NewBindGroupDesc()
+	bg_desc.SetLayout(pipeline.GetBindGroupLayout(1))
+	bg_desc.SetEntries(entries)
+
+	return device.CreateBindGroup(bg_desc)
+}

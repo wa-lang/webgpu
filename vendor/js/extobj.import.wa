@@ -8,6 +8,9 @@ func QuerySelector(sel: string) => Handle
 #wa:import extobj free_obj
 func jsFreeObj(h: Handle)
 
+#wa:import extobj set_member_bool
+func jsSetMember_bool(h: Handle, member_name: string, value: bool)
+
 #wa:import extobj set_member_i32
 func jsSetMember_i32(h: Handle, member_name: string, value: i32)
 

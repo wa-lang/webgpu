@@ -127,10 +127,23 @@ webgpu: new function () {
       }
       return adapter.requestDevice()
     }).then((device) => {
+      device._wa_ready = true;
       app._extobj.set_obj(h, device);
     })
 
     return h
+  }
+
+  this.device_ready = (device) => {
+    if (device === 0) {
+      return 0
+    }
+    let obj = app._extobj.get_obj(device);
+    if (obj._wa_ready) {
+      return 1
+    } else {
+      return 0
+    }
   }
 
   this.create_shader_module = (device, shader_code_b, shader_code_d, shader_code_l) => {
@@ -145,8 +158,30 @@ webgpu: new function () {
     let buffer = app._extobj.get_obj(device).createBuffer({
       size: byteLen,
       usage: usage,
-    })
-    return app._extobj.insert_obj(buffer)
+    });
+    return app._extobj.insert_obj(buffer);
+  }
+
+  this.create_texture = (device, desc) => {
+    let texture = app._extobj.get_obj(device).createTexture(app._extobj.get_obj(desc));
+    return app._extobj.insert_obj(texture);
+  }
+
+  this.create_sampler = (device, dh) => {
+    const desc = app._extobj.get_obj(dh)
+    let sampler = app._extobj.get_obj(device).createSampler(desc);
+    return app._extobj.insert_obj(sampler);
+  }
+
+  this.copy_external_image_to_texture = (dh, src, dest) => {
+    const device = app._extobj.get_obj(dh);
+    const imageBitmap = app._extobj.get_obj(src);
+    const tex = app._extobj.get_obj(dest);
+    device.queue.copyExternalImageToTexture(
+      { source: imageBitmap },
+      { texture: tex },
+      [imageBitmap.width, imageBitmap.height]
+    );
   }
 
   this.create_render_pipeline = (device, pl_desc) => {
@@ -154,9 +189,24 @@ webgpu: new function () {
     return app._extobj.insert_obj(pipeline);
   }
 
+  this.create_bind_group = (device, bg_desc) => {
+    let bind_group = app._extobj.get_obj(device).createBindGroup(app._extobj.get_obj(bg_desc));
+    return app._extobj.insert_obj(bind_group);
+  }
+
+  this.get_bind_group_layout = (pipeline, id) => {
+    let layout = app._extobj.get_obj(pipeline).getBindGroupLayout(id);
+    return app._extobj.insert_obj(layout);
+  }
+
   this.create_command_encoder = (device) => {
     let encoder = app._extobj.get_obj(device).createCommandEncoder();
     return app._extobj.insert_obj(encoder);
+  }
+
+  this.create_render_bundle_encoder = (device, desc) => {
+    let rb_encoder = app._extobj.get_obj(device).createRenderBundleEncoder(app._extobj.get_obj(desc));
+    return app._extobj.insert_obj(rb_encoder);
   }
 
   this.submit = (device_h, command_buffer_h) => {
@@ -180,16 +230,38 @@ webgpu: new function () {
     app._extobj.get_obj(render_pass).setPipeline(app._extobj.get_obj(pipeline));
   }
 
+  this.set_render_pass_bind_group = (render_pass, id, bg) => {
+    app._extobj.get_obj(render_pass).setBindGroup(id, app._extobj.get_obj(bg))
+  }
+
   this.set_render_pass_vertex_buffer = (render_pass, slot, buffer) => {
-    app._extobj.get_obj(render_pass).setVertexBuffer(slot, app._extobj.get_obj(buffer))
+    app._extobj.get_obj(render_pass).setVertexBuffer(slot, app._extobj.get_obj(buffer));
+  }
+
+  this.set_render_pass_index_buffer = (render_pass, buffer, typ_b, typ_d, typ_l) => {
+    const typ = app._mem_util.get_string(typ_d, typ_l);
+    app._extobj.get_obj(render_pass).setIndexBuffer(app._extobj.get_obj(buffer), typ);
   }
 
   this.draw_render_pass = (render_pass, vertex_count) => {
     app._extobj.get_obj(render_pass).draw(vertex_count);
   }
 
+  this.render_pass_draw_indexed = (render_pass, index_count) => {
+    app._extobj.get_obj(render_pass).drawIndexed(index_count);
+  }
+
+  this.pass_encoder_execute_bundles = (pass_encoder, render_bundles) => {
+    app._extobj.get_obj(pass_encoder).executeBundles(app._extobj.get_obj(render_bundles));
+  }
+
   this.end_render_pass = (render_pass) => {
     app._extobj.get_obj(render_pass).end()
+  }
+
+  this.render_bundle_encoder_finish = (encoder) => {
+    let bundle = app._extobj.get_obj(encoder).finish();
+    return app._extobj.insert_obj(bundle);
   }
 
   this.write_buffer = (device_h, buffer_h, offset, data_b, data_d, data_l, data_c) => {

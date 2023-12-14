@@ -22,6 +22,53 @@ type PipelineDesc_primitive struct {
 }
 
 /*
+不能使用该类型直接声明值，需通过 NewPipelineDesc_depthStencil() 创建
+*/
+type PipelineDesc_depthStencil struct {
+    js.ExtObj    
+}
+
+func NewPipelineDesc_depthStencil() => PipelineDesc_depthStencil {
+    ds: PipelineDesc_depthStencil
+    ds.ExtObj = js.NewExtObj()
+    return ds
+}
+
+func PipelineDesc_depthStencil.SetDepthBias(v: f32) {
+    this.SetMember_f32("depthBias", v)
+}
+
+func PipelineDesc_depthStencil.SetDepthBiasClamp(v: f32) {
+    this.SetMember_f32("depthBiasClamp", v)
+}
+
+func PipelineDesc_depthStencil.SetDepthBiasSlopeScale(v: f32) {
+    this.SetMember_f32("depthBiasSlopeScale", v)
+}
+
+const (
+    DepthCompare_never          = "never"
+    DepthCompare_less           = "less"
+    DepthCompare_equal          = "equal"
+    DepthCompare_less_equal     = "less-equal"
+    DepthCompare_greater        = "greater"
+    DepthCompare_not_equal      = "not-equal"
+    DepthCompare_greater_equal  = "greater-equal"
+    DepthCompare_always         = "always"
+)
+func PipelineDesc_depthStencil.SetDepthCompare(v: string) {
+    this.SetMember_string("depthCompare", v)
+}
+
+func PipelineDesc_depthStencil.SetDepthWriteEnabled(v: bool) {
+    this.SetMember_bool("depthWriteEnabled", v)
+}
+
+func PipelineDesc_depthStencil.SetFormat(v: TextureFormat) {
+    this.SetMember_string("format", textureFormatSymbols[v])
+}
+
+/*
 不能使用该类型直接声明值，需通过 NewPipelineDesc() 创建
 */
 type PipelineDesc struct {
@@ -65,9 +112,19 @@ func PipelineDesc.SetFragment(f: PipelineDesc_fragment) {
     this.SetMember_obj("fragment", vo)
 }
 
+func PipelineDesc.SetDepthStencil(d: PipelineDesc_depthStencil) {
+    this.SetMember_obj("depthStencil", d.ExtObj)
+}
+
 /*
 不能使用该类型直接声明值，需通过 Device.CreateRenderPipeline 创建
 */
 type RenderPipeline struct {
     js.ExtObj
+}
+
+func RenderPipeline.GetBindGroupLayout(id: int) => BindGroupLayout {
+    bl: BindGroupLayout
+    bl.ExtObj = js.WrapExtObj(jsGetBindGroupLayout(this.GetHandle(), id))
+    return bl
 }

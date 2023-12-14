@@ -7,15 +7,33 @@
 <script type="text/javascript" src="./gpu.js"></script>
 
 <script>
-  let app = new WaApp();
-  app.init().then((result) => {
-    app.main();
-  })
+  async function init() {
+    const r1 = await fetch('./saturn.jpg');
+    const i1 = await createImageBitmap(await r1.blob());
+    const r2 = await fetch('./moon.jpg');
+    const i2 = await createImageBitmap(await r2.blob());
+
+    window._img_bitmap = [i1, i2]
+
+    let app = new WaApp();
+    app.init().then((result) => {
+      app.main();
+
+      let stepFrame = function () {
+        app.StepFrame();
+        window.requestAnimationFrame(stepFrame);
+      }
+      window.requestAnimationFrame(stepFrame);
+    })
+  }
+  
+  init()
+
 </script>
 
-  <body>
-    <h1>WebGPU triangle</h1>
-    <canvas id="gpuCanvas" width="800" height="600"></canvas>
-  </body>
+<body>
+  <h1>WebGPU triangle</h1>
+  <canvas id="gpuCanvas" width="512" height="512"></canvas>
+</body>
 
 </html>
