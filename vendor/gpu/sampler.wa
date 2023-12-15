@@ -24,14 +24,14 @@ func NewSamplerDesc() => SamplerDesc {
 type Filter string
 
 const (
-    Filter_linear = "linear"
+    Filter_linear = Filter("linear")
 )
 
-func SamplerDesc.SetMagFilter(filter: string) {
+func SamplerDesc.SetMagFilter(filter: Filter) {
     println(filter)
-    this.SetMember_string("magFilter", filter)
+    this.SetMember_string("magFilter", string(filter))
 }
 
-func SamplerDesc.SetMinFilter(filter: string) {
-    this.SetMember_string("minFilter", filter)
+func SamplerDesc.SetMinFilter(filter: Filter) {
+    this.SetMember_string("minFilter", string(filter))
 }

@@ -114,7 +114,7 @@ func tryInitDevice() => bool {
 	return false
 }
 
-#wa:import gpu_sample get_image_bitmap
+#wa:import render_bundle get_image_bitmap
 func jsGetImageBitmap(id: i32) => js.Handle
 
 func tryInitResource() {

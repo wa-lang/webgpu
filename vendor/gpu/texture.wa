@@ -222,6 +222,8 @@ type Texture struct {
     js.ExtObj
 }
 
+#wa:import webgpu create_texture_view
+func jsCreateTextureView(texture: js.Handle) => js.Handle
 func Texture.CreateView() => TextureView {
     v: TextureView
     v.ExtObj = js.WrapExtObj(jsCreateTextureView(this.GetHandle()))

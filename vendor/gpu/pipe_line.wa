@@ -123,6 +123,8 @@ type RenderPipeline struct {
     js.ExtObj
 }
 
+#wa:import webgpu get_bind_group_layout
+func jsGetBindGroupLayout(pipeline: js.Handle, id: int) => js.Handle
 func RenderPipeline.GetBindGroupLayout(id: int) => BindGroupLayout {
     bl: BindGroupLayout
     bl.ExtObj = js.WrapExtObj(jsGetBindGroupLayout(this.GetHandle(), id))

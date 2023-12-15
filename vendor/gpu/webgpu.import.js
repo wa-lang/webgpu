@@ -117,12 +117,14 @@ webgpu: new function () {
 
   this.create_device = () => {
     if (!navigator.gpu) {
+      alert('WebGPU not supported.');
       throw Error('WebGPU not supported.');
     }
 
     let h = app._extobj.insert_obj({});
     navigator.gpu.requestAdapter().then((adapter) => {
       if (!adapter) {
+        alert('Couldn\'t request WebGPU adapter.');
         throw Error('Couldn\'t request WebGPU adapter.');
       }
       return adapter.requestDevice()
@@ -279,4 +281,4 @@ webgpu: new function () {
   this.get_preferred_canvas_format = () => {
     return this._texture_format_map.get(navigator.gpu.getPreferredCanvasFormat());
   }
-}
+},

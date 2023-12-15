@@ -24,6 +24,8 @@ type Buffer struct {
     js.ExtObj
 }
 
+#wa:import webgpu write_buffer
+func jsWriteBuffer(device, buffer: js.Handle, offset: i32, data: []byte)
 func Buffer.Write(offset: i32, data: []byte) {
     jsWriteBuffer(this._device.GetHandle(), this.GetHandle(), offset, data)
 }

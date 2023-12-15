@@ -178,6 +178,8 @@ func CommandEncoder.BeginRenderPass(desc: RenderPassDesc) => PassEncoder {
     return rp
 }
 
+#wa:import webgpu finish_command_encoder
+func jsFinishCommandEncoder(command_encoder: js.Handle) => js.Handle
 func CommandEncoder.Finish() => GPUCommandBuffer {
     gb: GPUCommandBuffer
     gb.ExtObj = js.WrapExtObj(jsFinishCommandEncoder(this.GetHandle()))

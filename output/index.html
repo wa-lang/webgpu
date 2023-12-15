@@ -4,7 +4,8 @@
 
 <title>gpu</title>
 
-<script type="text/javascript" src="./gpu.js"></script>
+<script type="text/javascript" src="./gpu_sample.js"></script>
+<script src="./vconsole.min.js"></script>
 
 <script>
   async function init() {
@@ -24,6 +25,7 @@
         window.requestAnimationFrame(stepFrame);
       }
       window.requestAnimationFrame(stepFrame);
+      var vConsole = new window.VConsole();
     })
   }
   
@@ -32,7 +34,8 @@
 </script>
 
 <body>
-  <h1>WebGPU RenderBundle</h1>
+  <h1>凹语言WebGPU示例--RenderBundle</h1>
+  <h4>Repo: <a href="https://gitee.com/wa-lang/webgpu">https://gitee.com/wa-lang/webgpu</a></h4>
   <canvas id="gpuCanvas" width="512" height="512"></canvas>
 </body>
 
