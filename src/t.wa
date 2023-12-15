@@ -8,7 +8,7 @@ import "math/rand"
 import "js"
 
 const (
-	CanvasWidth = 512
+	CanvasWidth = 1024
 	CanvasHeight = 512
 	uniformBufferSize = 4 * 16
 )
@@ -221,7 +221,7 @@ func tryInitResource() {
 	}
 
 	for i := 0; i < 5000; i++ {
-		radius := rand.Float32() * 1.7 + 1.25
+		radius := rand.Float32() * 2.0 + 1.25
 		angle := rand.Float32() * math.Pi * 2
 		x := f32(math.Sin(f64(angle))) * radius
 		y := (rand.Float32() - 0.5) * 0.05
@@ -254,7 +254,7 @@ func draw() {
 	matView := matrix.NewCameraTransform(vec3.Vec3{0, 0, 4}, vec3.Vec3{0, 0, 0}, vec3.Vec3{0, 1, 0})
 	matMVP = matrix.Mul(matMVP, matView)
 
-	matProj := matrix.NewPerspective(2 * math.Pi / 5, 1, 0.5, 100)
+	matProj := matrix.NewPerspective(2 * math.Pi / 5, f32(CanvasWidth) / f32(CanvasHeight), 0.1, 10)
 	matMVP = matrix.Mul(matMVP, matProj)
 	uniformBuffer.Write(0, raw([][4][4]f32{matMVP.M}))
 	
