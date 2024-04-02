@@ -1,21 +1,20 @@
 // 版权 @2023 凹语言 作者。保留所有权利。
 
 import "gpu"
-import "vec3"
-import "matrix"
+import "math/vector"
+import "math/matrix"
 import "math"
 import "math/rand"
 import "js"
 
 const (
-	CanvasWidth = 1024
+	CanvasWidth = 512
 	CanvasHeight = 512
 	uniformBufferSize = 4 * 16
 )
 
 func main {
 	println("你好，GPU")
-	vec3.T()
 }
 
 //*
@@ -207,7 +206,7 @@ func tryInitResource() {
 	}
 
 	planet := createSphereRenderable(device, 1.0, 32, 16, 0)
-	mat: matrix.Matrix
+	mat: matrix.Mat4f
 	mat.Identity()
 	planet.bg = createBindGroup(device, renderPipeline, mat, texPlanet)
 	rbs = append(rbs, planet)
@@ -220,16 +219,16 @@ func tryInitResource() {
 		createSphereRenderable(device, 0.03, 16, 8, 0.15),
 	}
 
-	for i := 0; i < 5000; i++ {
+	for i := 0; i < 10000; i++ {
 		radius := rand.Float32() * 2.0 + 1.25
 		angle := rand.Float32() * math.Pi * 2
 		x := f32(math.Sin(f64(angle))) * radius
 		y := (rand.Float32() - 0.5) * 0.05
 		z := f32(math.Cos(f64(angle))) * radius
 
-		r0 := matrix.NewRotateAxis(vec3.Vec3{1, 0, 0}, rand.Float32() * math.Pi)
-		r1 := matrix.NewRotateAxis(vec3.Vec3{0, 1, 0}, rand.Float32() * math.Pi)
-		t := matrix.NewTranslate(vec3.Vec3{x, y, z})
+		r0 := matrix.NewRotateAxis(vector.Vec3f{1, 0, 0}, rand.Float32() * math.Pi)
+		r1 := matrix.NewRotateAxis(vector.Vec3f{0, 1, 0}, rand.Float32() * math.Pi)
+		t := matrix.NewTranslate(vector.Vec3f{x, y, z})
 
 		rb := asteroids[i % len(asteroids)]
 		rb.bg = createBindGroup(device, renderPipeline, matrix.Mul(matrix.Mul(r0, r1), t), texMoon)
@@ -246,12 +245,12 @@ func tryInitResource() {
 }
 
 func draw() {
-	matMVP := matrix.NewRotateAxis(vec3.Vec3{0, 1, 0}, mRotation)
+	matMVP := matrix.NewRotateAxis(vector.Vec3f{0, 1, 0}, mRotation)
 	mRotation += 0.001
-	rT := matrix.NewRotateAxis(vec3.Vec3{1, 0, 1}, 0.1 * math.Pi)
+	rT := matrix.NewRotateAxis(vector.Vec3f{1, 0, 1}, 0.1 * math.Pi)
 	matMVP = matrix.Mul(matMVP, rT)
 
-	matView := matrix.NewCameraTransform(vec3.Vec3{0, 0, 4}, vec3.Vec3{0, 0, 0}, vec3.Vec3{0, 1, 0})
+	matView := matrix.NewCameraTransform(vector.Vec3f{0, 0, 4}, vector.Vec3f{0, 0, 0}, vector.Vec3f{0, 1, 0})
 	matMVP = matrix.Mul(matMVP, matView)
 
 	matProj := matrix.NewPerspective(2 * math.Pi / 5, f32(CanvasWidth) / f32(CanvasHeight), 0.1, 10)

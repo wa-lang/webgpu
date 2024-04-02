@@ -1,7 +1,7 @@
 // 版权 @2023 凹语言 作者。保留所有权利。
 
-import "vec3"
-import "matrix"
+import "math/vector"
+import "math/matrix"
 import "math"
 import "gpu"
 import "math/rand"
@@ -14,8 +14,8 @@ const (
 )
 
 type sphereVertex struct {
-	pos: vec3.Vec3
-	nor: vec3.Vec3
+	pos: vector.Vec3f
+	nor: vector.Vec3f
 	u, v: f32
 }
 
@@ -30,7 +30,7 @@ func createSphere(radius: f32, w, h: int, radiu_random: f32) => *sphereMesh {
 	grid: [][]u16
 
 	vertex: sphereVertex
-	first_pos: vec3.Vec3
+	first_pos: vector.Vec3f
 	vertex_count: u16
 
 	for y := 0; y <= h; y++ {
@@ -59,7 +59,7 @@ func createSphere(radius: f32, w, h: int, radiu_random: f32) => *sphereMesh {
 				}
 			}
 
-			vertex.nor = vec3.Normalize(vertex.pos)
+			vertex.nor = vector.Normalize(vertex.pos)
 			vertex.u = u + u_off
 			vertex.v = 1 - v
 			row_index[x] = vertex_count
@@ -116,7 +116,7 @@ func createSphereRenderable(device: gpu.Device, radius: f32, w, h: int, random: 
 	return rb
 }
 
-func createBindGroup(device: gpu.Device, pipeline: gpu.RenderPipeline, mat: matrix.Matrix, texture: gpu.Texture) => gpu.BindGroup {
+func createBindGroup(device: gpu.Device, pipeline: gpu.RenderPipeline, mat: matrix.Mat4f, texture: gpu.Texture) => gpu.BindGroup {
 	uniformBuffer := device.CreateBuffer(uniformBufferSize, gpu.BufferUsage_UNIFORM | gpu.BufferUsage_COPY_DST)
 	uniformBuffer.Write(0, raw([][4][4]f32{mat.M}))
 
