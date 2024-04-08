@@ -159,12 +159,15 @@ func tryInitResource() {
 	}
 
 	{
-		d := gpu.NewTextureDesc()
-		d.SetFormat(gpu.TextureFormat_depth24plus)
-		d.SetSize([]i32{CanvasWidth, CanvasHeight})
-		d.SetUsage(gpu.TextureUsage_RENDER_ATTACHMENT)
+		d: gpu.TextureDesc
+		d.Default()
+		d.Format = gpu.TextureFormat_depth24plus
+		d.Width = CanvasWidth
+		d.Height = CanvasHeight
+		d.Usage = gpu.TextureUsage_RENDER_ATTACHMENT
+		d.Label = "Z-Buf"
 
-		depthTexture = device.CreateTexture(d)
+		depthTexture = device.CreateTexture(&d)
 	}
 
 	uniformBuffer = device.CreateBuffer(uniformBufferSize, gpu.BufferUsage_UNIFORM | gpu.BufferUsage_COPY_DST)
@@ -185,13 +188,19 @@ func tryInitResource() {
 
 	// Texture
 	{
-		texDesc := gpu.NewTextureDesc()
-		texDesc.SetFormat(gpu.TextureFormat_rgba8unorm)
-		texDesc.SetSize([]i32{2048, 1024})
-		texDesc.SetUsage(gpu.TextureUsage_TEXTURE_BINDING | gpu.TextureUsage_COPY_DST | gpu.TextureUsage_RENDER_ATTACHMENT)
-		texPlanet = device.CreateTexture(texDesc)
-		texDesc.SetSize([]i32{512, 256})
-		texMoon = device.CreateTexture(texDesc)
+		texDesc: gpu.TextureDesc
+		texDesc.Default()
+		texDesc.Format = gpu.TextureFormat_rgba8unorm
+		texDesc.Width = 2048
+		texDesc.Height = 1024
+		texDesc.Usage = gpu.TextureUsage_TEXTURE_BINDING | gpu.TextureUsage_COPY_DST | gpu.TextureUsage_RENDER_ATTACHMENT
+		texDesc.Label = "Plannet"
+		texPlanet = device.CreateTexture(&texDesc)
+
+		texDesc.Width = 512
+		texDesc.Height = 256
+		texDesc.Label = "Astroid"
+		texMoon = device.CreateTexture(&texDesc)
 
 		device.CopyExternalImageToTexture(js.WrapExtObj(jsGetImageBitmap(0)), texPlanet)
 		device.CopyExternalImageToTexture(js.WrapExtObj(jsGetImageBitmap(1)), texMoon)
@@ -219,7 +228,7 @@ func tryInitResource() {
 		createSphereRenderable(device, 0.03, 16, 8, 0.15),
 	}
 
-	for i := 0; i < 10000; i++ {
+	for i := 0; i < 1; i++ {
 		radius := rand.Float32() * 2.0 + 1.25
 		angle := rand.Float32() * math.Pi * 2
 		x := f32(math.Sin(f64(angle))) * radius
