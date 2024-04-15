@@ -6,6 +6,7 @@ import "math/matrix"
 import "math"
 import "math/rand"
 import "js"
+import "net"
 
 const (
 	CanvasWidth = 512
@@ -13,8 +14,50 @@ const (
 	uniformBufferSize = 4 * 16
 )
 
+type MyHandler struct {
+	i: i32
+}
+
+func MyHandler.handle(resource: string, ok: bool, status: u32, data: []byte) {
+	println(this.i)
+	println("h.handle(), data:", string(data))
+}
+
+func MyHandler.OnDone(resource: string, ok: bool, status: u32, data: []byte) {
+	println("h.OnDone(), data:", string(data))
+}
+
+func _Finalizer1(p: u32) {
+    println("_Finalizer1(), 释放 Block:", p)
+}
+
+func _Finalizer2(p: u32) {
+    println("_Finalizer2(), 释放 Block:", p)
+}
+
+global P: *u32
+
+func FFF() {
+	P = nil
+}
+
 func main {
-	println("你好，GPU")
+	h1: MyHandler
+	h1.i = 13
+	setFinalizer(&h1, _Finalizer1)
+	net.FetchBlob("a.txt", h1.handle)
+	net.FetchBlob("a.txt", &h1)
+
+	v: u32
+	setFinalizer(&v, _Finalizer2)
+	h2 := func (resource: string, ok: bool, status: u32, data: []byte) {
+		v = status
+		println("h1, url:", resource, ", ok:", ok , ", status:", status, ", data:", string(data))
+	}
+	net.FetchBlob("a.txt", h2)
+	P = &v
+
+	//println("你好，GPU")
 }
 
 //*
@@ -113,9 +156,6 @@ func tryInitDevice() => bool {
 	return false
 }
 
-#wa:import render_bundle get_image_bitmap
-func jsGetImageBitmap(id: i32) => js.Handle
-
 func tryInitResource() {
 	if resourceInitialized {
 		return
@@ -202,8 +242,18 @@ func tryInitResource() {
 		texDesc.Label = "Astroid"
 		texMoon = device.CreateTexture(&texDesc)
 
-		device.CopyExternalImageToTexture(js.WrapExtObj(jsGetImageBitmap(0)), texPlanet)
-		device.CopyExternalImageToTexture(js.WrapExtObj(jsGetImageBitmap(1)), texMoon)
+		f1 := func(resource: string, ok: bool, status: u32, extobj: js.Handle) {
+			device.CopyExternalImageToTexture(js.WrapExtObj(extobj), texPlanet)
+		}
+		net.FetchImage("./saturn.jpg", f1)
+
+		f2 := func(resource: string, ok: bool, status: u32, extobj: js.Handle) {
+			device.CopyExternalImageToTexture(js.WrapExtObj(extobj), texMoon)
+		}
+		net.FetchImage("./moon.jpg", f2)
+
+		//device.CopyExternalImageToTexture(js.WrapExtObj(jsGetImageBitmap(0)), texPlanet)
+		//device.CopyExternalImageToTexture(js.WrapExtObj(jsGetImageBitmap(1)), texMoon)
 	}
 
 	{
@@ -228,7 +278,7 @@ func tryInitResource() {
 		createSphereRenderable(device, 0.03, 16, 8, 0.15),
 	}
 
-	for i := 0; i < 1; i++ {
+	for i := 0; i < 1000; i++ {
 		radius := rand.Float32() * 2.0 + 1.25
 		angle := rand.Float32() * math.Pi * 2
 		x := f32(math.Sin(f64(angle))) * radius

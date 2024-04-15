@@ -9,15 +9,8 @@
 
 <script>
   async function init() {
-    const r1 = await fetch('./saturn.jpg');
-    const i1 = await createImageBitmap(await r1.blob());
-    const r2 = await fetch('./moon.jpg');
-    const i2 = await createImageBitmap(await r2.blob());
-
-    window._img_bitmap = [i1, i2]
-
     let app = new WaApp();
-	window.app = app;
+	  window.app = app;
     app.init().then((result) => {
       app.main();
 
