@@ -101,7 +101,7 @@ type Renderable struct {
 	bg: gpu.BindGroup
 }
 
-func createSphereRenderable(device: gpu.Device, radius: f32, w, h: int, random: f32) => Renderable {
+func createSphereRenderable(device: *gpu.Device, radius: f32, w, h: int, random: f32) => Renderable {
 	mesh := createSphere(radius, w, h, random)
 
 	rb: Renderable
@@ -122,7 +122,7 @@ func createSphereRenderable(device: gpu.Device, radius: f32, w, h: int, random: 
 	return rb
 }
 
-func createBindGroup(device: gpu.Device, pipeline: gpu.RenderPipeline, mat: matrix.Mat4f, texture: *gpu.Texture) => gpu.BindGroup {
+func createBindGroup(device: *gpu.Device, pipeline: gpu.RenderPipeline, mat: matrix.Mat4f, texture: *gpu.Texture) => gpu.BindGroup {
 	bufdesc := gpu.BufferDesc{
 		Size: uniformBufferSize,
 		Usage: gpu.BufferUsage_UNIFORM | gpu.BufferUsage_COPY_DST,

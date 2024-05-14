@@ -109,7 +109,7 @@ fn fragmentMain(input: VertexOutput) -> @location(0) vec4f {
 
 global (
 	deviceCreated = false
-	device: gpu.Device
+	device: *gpu.Device
 
 	resourceInitialized = false
 	shader: gpu.ShaderModule
@@ -143,12 +143,19 @@ func StepFrame() {
 
 func tryInitDevice() => bool {
 	if deviceCreated {
-		return device.Ready()
+		return device != nil
 	}
-	println("Init device...")
-	device = gpu.CreateDevice()
-	deviceCreated = true
 
+	println("Request adapter...")
+	gpu.RequestAdapter(func(a: *gpu.Adapter) {
+		println("Request device...")
+		a.RequestDevice(func(d: *gpu.Device){
+			println("Request device ready.")
+			device = d
+		})
+	})
+
+	deviceCreated = true
 	rand.Seed(73543197)
 	return false
 }
