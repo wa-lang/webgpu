@@ -147,9 +147,9 @@ func tryInitDevice() => bool {
 	}
 
 	println("Request adapter...")
-	gpu.RequestAdapter(func(a: *gpu.Adapter) {
+	gpu.RequestAdapter(func(adapter: *gpu.Adapter) {
 		println("Request device...")
-		a.RequestDevice(func(d: *gpu.Device){
+		adapter.RequestDevice(func(d: *gpu.Device){
 			println("Request device ready.")
 			device = d
 		})
