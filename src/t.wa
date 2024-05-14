@@ -26,7 +26,6 @@ func MyHandler.handle(resource: string, ok: bool, status: u32, data: []byte) {
 func MyHandler.OnDone(resource: string, ok: bool, status: u32, data: []byte) {
 	println("h.OnDone(), data:", string(data))
 }
-
 func _Finalizer1(p: u32) {
     println("_Finalizer1(), 释放 Block:", p)
 }
@@ -50,17 +49,15 @@ func main {
 
 	v: u32
 	setFinalizer(&v, _Finalizer2)
-	h2 := func (resource: string, ok: bool, status: u32, data: []byte) {
+	net.FetchBlob("a.txt", func (resource: string, ok: bool, status: u32, data: []byte) {
 		v = status
 		println("h1, url:", resource, ", ok:", ok , ", status:", status, ", data:", string(data))
-	}
-	net.FetchBlob("a.txt", h2)
+	})
 	P = &v
 
 	//println("你好，GPU")
 }
 
-//*
 const shaderCode = `
 struct Uniforms {
   viewProjectionMatrix : mat4x4f
@@ -118,13 +115,13 @@ global (
 	shader: gpu.ShaderModule
 	contex: gpu.Contex
 	renderPipeline: gpu.RenderPipeline
-	depthTexture: gpu.Texture
+	depthTexture: *gpu.Texture
 
-	uniformBuffer: gpu.Buffer
+	uniformBuffer: *gpu.Buffer
 	frameBindGroup: gpu.BindGroup
 
-	texPlanet, texMoon: gpu.Texture
-	sampler: gpu.Sampler
+	texPlanet, texMoon: *gpu.Texture
+	sampler: *gpu.Sampler
 
 	rbs: []Renderable
 
@@ -199,18 +196,22 @@ func tryInitResource() {
 	}
 
 	{
-		d: gpu.TextureDesc
-		d.Default()
+		d := gpu.DefaultTextureDesc()
 		d.Format = gpu.TextureFormat_depth24plus
 		d.Width = CanvasWidth
 		d.Height = CanvasHeight
 		d.Usage = gpu.TextureUsage_RENDER_ATTACHMENT
 		d.Label = "Z-Buf"
 
-		depthTexture = device.CreateTexture(&d)
+		depthTexture = device.CreateTexture(d)
 	}
 
-	uniformBuffer = device.CreateBuffer(uniformBufferSize, gpu.BufferUsage_UNIFORM | gpu.BufferUsage_COPY_DST)
+
+	bufdesc := gpu.BufferDesc{
+		Size: uniformBufferSize,
+		Usage: gpu.BufferUsage_UNIFORM | gpu.BufferUsage_COPY_DST,
+	}
+	uniformBuffer = device.CreateBuffer(bufdesc)
 	{
 		entries : []gpu.BindGroupEntry
 
@@ -228,39 +229,33 @@ func tryInitResource() {
 
 	// Texture
 	{
-		texDesc: gpu.TextureDesc
-		texDesc.Default()
+		texDesc := gpu.DefaultTextureDesc()
 		texDesc.Format = gpu.TextureFormat_rgba8unorm
 		texDesc.Width = 2048
 		texDesc.Height = 1024
 		texDesc.Usage = gpu.TextureUsage_TEXTURE_BINDING | gpu.TextureUsage_COPY_DST | gpu.TextureUsage_RENDER_ATTACHMENT
 		texDesc.Label = "Plannet"
-		texPlanet = device.CreateTexture(&texDesc)
+		texPlanet = device.CreateTexture(texDesc)
 
 		texDesc.Width = 512
 		texDesc.Height = 256
 		texDesc.Label = "Astroid"
-		texMoon = device.CreateTexture(&texDesc)
+		texMoon = device.CreateTexture(texDesc)
 
-		f1 := func(resource: string, ok: bool, status: u32, extobj: js.Handle) {
+		net.FetchImage("./saturn.jpg", func(resource: string, ok: bool, status: u32, extobj: js.Handle) {
 			device.CopyExternalImageToTexture(js.WrapExtObj(extobj), texPlanet)
-		}
-		net.FetchImage("./saturn.jpg", f1)
+			println(texPlanet.Label(), texPlanet.Dimension())
+		})
 
-		f2 := func(resource: string, ok: bool, status: u32, extobj: js.Handle) {
+		net.FetchImage("./moon.jpg", func(resource: string, ok: bool, status: u32, extobj: js.Handle) {
 			device.CopyExternalImageToTexture(js.WrapExtObj(extobj), texMoon)
-		}
-		net.FetchImage("./moon.jpg", f2)
-
-		//device.CopyExternalImageToTexture(js.WrapExtObj(jsGetImageBitmap(0)), texPlanet)
-		//device.CopyExternalImageToTexture(js.WrapExtObj(jsGetImageBitmap(1)), texMoon)
+		})
 	}
 
 	{
-		sd := gpu.NewSamplerDesc()
-		sd.SetMagFilter(gpu.Filter_linear)
-		sd.SetMinFilter(gpu.Filter_linear)
-
+		sd := gpu.DefaultSamplerDesc()
+		sd.MagFilter = gpu.Filter_linear
+		sd.MinFilter = gpu.Filter_linear
 		sampler = device.CreateSampler(sd)
 	}
 

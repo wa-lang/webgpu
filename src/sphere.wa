@@ -95,8 +95,8 @@ func createSphere(radius: f32, w, h: int, radiu_random: f32) => *sphereMesh {
 }
 
 type Renderable struct {
-	vb: gpu.Buffer
-	ib: gpu.Buffer
+	vb: *gpu.Buffer
+	ib: *gpu.Buffer
 	icount: i32
 	bg: gpu.BindGroup
 }
@@ -106,18 +106,29 @@ func createSphereRenderable(device: gpu.Device, radius: f32, w, h: int, random: 
 
 	rb: Renderable
 
-	rb.vb = device.CreateBuffer(sphereVertexStride * len(mesh.vertex), gpu.BufferUsage_VERTEX | gpu.BufferUsage_COPY_DST)
+	bufdesc := gpu.BufferDesc{
+		Size: sphereVertexStride * len(mesh.vertex),
+		Usage: gpu.BufferUsage_VERTEX | gpu.BufferUsage_COPY_DST,
+	}
+	rb.vb = device.CreateBuffer(bufdesc)
 	rb.vb.Write(0, raw(mesh.vertex))
 
-	rb.ib = device.CreateBuffer(2 * len(mesh.index), gpu.BufferUsage_INDEX | gpu.BufferUsage_COPY_DST)
+	bufdesc.Size = 2 * len(mesh.index)
+	bufdesc.Usage = gpu.BufferUsage_INDEX | gpu.BufferUsage_COPY_DST
+	rb.ib = device.CreateBuffer(bufdesc)
 	rb.ib.Write(0, raw(mesh.index))
 
 	rb.icount = i32(len(mesh.index))
 	return rb
 }
 
-func createBindGroup(device: gpu.Device, pipeline: gpu.RenderPipeline, mat: matrix.Mat4f, texture: gpu.Texture) => gpu.BindGroup {
-	uniformBuffer := device.CreateBuffer(uniformBufferSize, gpu.BufferUsage_UNIFORM | gpu.BufferUsage_COPY_DST)
+func createBindGroup(device: gpu.Device, pipeline: gpu.RenderPipeline, mat: matrix.Mat4f, texture: *gpu.Texture) => gpu.BindGroup {
+	bufdesc := gpu.BufferDesc{
+		Size: uniformBufferSize,
+		Usage: gpu.BufferUsage_UNIFORM | gpu.BufferUsage_COPY_DST,
+	}
+
+	uniformBuffer := device.CreateBuffer(bufdesc)
 	uniformBuffer.Write(0, raw([][4][4]f32{mat.M}))
 
 	entries : []gpu.BindGroupEntry
