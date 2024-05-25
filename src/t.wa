@@ -273,7 +273,7 @@ func tryInitResource() {
 		createSphereRenderable(device, 0.03, 16, 8, 0.15),
 	}
 
-	for i := 0; i < 1000; i++ {
+	for i := 0; i < 5000; i++ {
 		radius := rand.Float32() * 2.0 + 1.25
 		angle := rand.Float32() * math.Pi * 2
 		x := f32(math.Sin(f64(angle))) * radius
