@@ -109,19 +109,19 @@ fn fragmentMain(input: VertexOutput) -> @location(0) vec4f {
 
 global (
 	deviceCreated = false
-	device: *gpu.Device
+	device: gpu.Device
 
 	resourceInitialized = false
 	shader: gpu.ShaderModule
-	contex: gpu.Contex
+	contex: gpu.CanvasContex
 	renderPipeline: gpu.RenderPipeline
-	depthTexture: *gpu.Texture
+	depthTexture: gpu.Texture
 
 	uniformBuffer: *gpu.Buffer
 	frameBindGroup: gpu.BindGroup
 
-	texPlanet, texMoon: *gpu.Texture
-	sampler: *gpu.Sampler
+	texPlanet, texMoon: gpu.Texture
+	sampler: gpu.Sampler
 
 	rbs: []Renderable
 
@@ -143,13 +143,13 @@ func StepFrame() {
 
 func tryInitDevice() => bool {
 	if deviceCreated {
-		return device != nil
+		return device.Valid()
 	}
 
 	println("Request adapter...")
-	gpu.RequestAdapter(func(adapter: *gpu.Adapter) {
+	gpu.RequestAdapter(func(adapter: gpu.Adapter) {
 		println("Request device...")
-		adapter.RequestDevice(func(d: *gpu.Device){
+		adapter.RequestDevice(func(d: gpu.Device){
 			println("Request device ready.")
 			device = d
 		})
@@ -167,43 +167,42 @@ func tryInitResource() {
 	resourceInitialized = true
 	println("Init resource...")
 
-	contex = gpu.QueryContex("#gpuCanvas")
+	contex = gpu.QueryCanvasGpuContex("#gpuCanvas")
 	{
 		cc := gpu.ContexConfig{Device: device, Format: gpu.GetPreferredCanvasFormat(), AlphaMode: gpu.AlphaMode_premultiplied}
 		contex.Configure(cc)
 	}
 
-	shader = device.CreateShaderModule(shaderCode)
+	shader = device.CreateShaderModule(gpu.ShaderModuleDesc{Code: shaderCode})
 
 	// pipeline:
 	{
-		pipelineDesc := gpu.NewPipeLineDesc()
+		pipelineDesc: gpu.RenderPipelineDesc
+
+		pipelineDesc.DepthStencil.DepthCompare = gpu.DepthCompare_less
+		pipelineDesc.DepthStencil.DepthWriteEnabled = true
+		pipelineDesc.DepthStencil.Format = gpu.TextureFormat_depth24plus
+
+		pipelineDesc.Fragment.Module = shader
+		pipelineDesc.Fragment.EntryPoint = "fragmentMain"
+		fragTarget := gpu.FragmentTarget{Format: gpu.GetPreferredCanvasFormat()}
+		pipelineDesc.Fragment.Targets = append(pipelineDesc.Fragment.Targets, fragTarget)
+
 		vertexAttributes := [...]gpu.VertexAttribute{
 			gpu.VertexAttribute{Location: 0, Offset: posOffset, Format: gpu.VertexFormat_float32x3},  // pos
 			gpu.VertexAttribute{Location: 1, Offset: norOffset, Format: gpu.VertexFormat_float32x3},  // nor
 			gpu.VertexAttribute{Location: 2, Offset: uvOffset, Format: gpu.VertexFormat_float32x2},  // uv
 		}
 		vertexLayout := gpu.NewVertexLayout(sphereVertexStride, gpu.BufferStepMode_vertex, vertexAttributes[:])
-		pldVertex := gpu.PipelineDesc_vertex{Module: shader, EntryPoint: "vertexMain"}
-		pldVertex.Layouts = append(pldVertex.Layouts, vertexLayout)
+		pipelineDesc.Vertex.Module = shader
+		pipelineDesc.Vertex.EntryPoint = "vertexMain"
+		pipelineDesc.Vertex.Layouts = append(pipelineDesc.Vertex.Layouts, vertexLayout)		
 
-		fragTarget := gpu.NewFragmentTarget(gpu.GetPreferredCanvasFormat())
-		pldFragment := gpu.PipelineDesc_fragment{Module: shader, EntryPoint: "fragmentMain"}
-		pldFragment.Targets = append(pldFragment.Targets, fragTarget)
-
-		depthStencil := gpu.NewPipelineDesc_depthStencil()
-		depthStencil.SetDepthWriteEnabled(true)
-		depthStencil.SetDepthCompare(gpu.DepthCompare_less)
-		depthStencil.SetFormat(gpu.TextureFormat_depth24plus)
-
-		pipelineDesc.SetVertex(pldVertex)
-		pipelineDesc.SetFragment(pldFragment)
-		pipelineDesc.SetDepthStencil(depthStencil)
 		renderPipeline = device.CreateRenderPipeline(pipelineDesc)
 	}
 
 	{
-		d := gpu.DefaultTextureDesc()
+		d: gpu.TextureDesc
 		d.Format = gpu.TextureFormat_depth24plus
 		d.Width = CanvasWidth
 		d.Height = CanvasHeight
@@ -220,23 +219,17 @@ func tryInitResource() {
 	}
 	uniformBuffer = device.CreateBuffer(bufdesc)
 	{
-		entries : []gpu.BindGroupEntry
+		bg_desc: gpu.BindGroupDesc
+		e := gpu.NewBindGroupEntry(0, gpu.NewBufferBinding(uniformBuffer))
+		bg_desc.Entries = append(bg_desc.Entries, e)
 
-		e0 := gpu.NewBindGroupEntry()
-		e0.SetBinding(0)
-		e0.SetResource(gpu.NewBufferBinding(uniformBuffer).ExtObj)
-		entries = append(entries, e0)
-
-		bg_desc := gpu.NewBindGroupDesc()
-		bg_desc.SetLayout(renderPipeline.GetBindGroupLayout(0))
-		bg_desc.SetEntries(entries)
-
+		bg_desc.Layout = renderPipeline.GetBindGroupLayout(0)
 		frameBindGroup = device.CreateBindGroup(bg_desc)
 	}
 
 	// Texture
 	{
-		texDesc := gpu.DefaultTextureDesc()
+		texDesc: gpu.TextureDesc
 		texDesc.Format = gpu.TextureFormat_rgba8unorm
 		texDesc.Width = 2048
 		texDesc.Height = 1024
@@ -260,7 +253,7 @@ func tryInitResource() {
 	}
 
 	{
-		sd := gpu.DefaultSamplerDesc()
+		sd: gpu.SamplerDesc
 		sd.MagFilter = gpu.Filter_linear
 		sd.MinFilter = gpu.Filter_linear
 		sampler = device.CreateSampler(sd)
@@ -297,12 +290,12 @@ func tryInitResource() {
 		rbs = append(rbs, rb)
 	}
 
-	rbe_desc := gpu.NewRenderBundleEncoderDesc()
-	rbe_desc.SetColorFormats([]gpu.TextureFormat{gpu.GetPreferredCanvasFormat()})
-	rbe_desc.SetDepthStencilFormat(gpu.TextureFormat_depth24plus)
+	rbe_desc: gpu.RenderBundleEncoderDesc
+	rbe_desc.ColorFormats = []gpu.TextureFormat{gpu.GetPreferredCanvasFormat()}
+	rbe_desc.DepthStencilFormat = gpu.TextureFormat_depth24plus
 	renderBundleEncoder := device.CreateRenderBundleEncoder(rbe_desc)
 	renderScene(renderBundleEncoder)
-	renderBundle = renderBundleEncoder.Finish()
+	renderBundle = renderBundleEncoder.Finish_Bundle()
 }
 
 func draw() {
@@ -317,27 +310,24 @@ func draw() {
 	matProj := matrix.NewPerspective(2 * math.Pi / 5, f32(CanvasWidth) / f32(CanvasHeight), 0.1, 10)
 	matMVP = matrix.Mul(matMVP, matProj)
 	uniformBuffer.Write(0, raw([][4][4]f32{matMVP.M}))
-	
-	colorAttachments := [...]gpu.RenderPassDesc_ColorAttchment{
-		gpu.RenderPassDesc_ColorAttchment{
-			ClearValue: gpu.Color{0, 0, 0, 1},
-			LoadOp: gpu.LoadOp_clear,
-			StoreOp: gpu.StoreOp_store,
-		},
-	}
-	contexTexture := contex.GetCurrentTexture()
-	colorAttachments[0].View = contexTexture.CreateView()
 
-	depthStencilAttachment := gpu.RenderPassDesc_DepthStencilAttachment{
-		ClearValue: 1.0,
+	renderPassDesc: gpu.RenderPassDesc
+
+	contexTexture := contex.CurrentTexture()
+	colorAttachment := gpu.ColorAttchmentDesc{
+		ClearValue: gpu.Color{0, 0, 0, 1},
 		LoadOp: gpu.LoadOp_clear,
 		StoreOp: gpu.StoreOp_store,
+		View: contexTexture.CreateView(),
+	}
+	renderPassDesc.ColorAttachments = append(renderPassDesc.ColorAttachments, colorAttachment)
+
+	renderPassDesc.DepthStencilAttachment = gpu.DepthStencilAttachmentDesc{
+		DepthClearValue: 1.0,
+		DepthLoadOp: gpu.LoadOp_clear,
+		DepthStoreOp: gpu.StoreOp_store,
 		View: depthTexture.CreateView(),
 	}
-
-	renderPassDesc := gpu.NewRenderPassDesc()
-	renderPassDesc.SetColorAttachments(colorAttachments[:])
-	renderPassDesc.SetDepthStencilAttachment(depthStencilAttachment)
 
 	commandEncoder := device.CreateCommandEncoder()
 	encoder := commandEncoder.BeginRenderPass(renderPassDesc)
@@ -349,14 +339,14 @@ func draw() {
 	device.Submit(commandEncoder.Finish())
 }
 
-func renderScene(encoder: gpu.PassEncoder) {
+func renderScene(encoder: gpu.RenderEncoder) {
 	encoder.SetPipeline(renderPipeline)
 	encoder.SetBindGroup(0, frameBindGroup)
 
 	for _, rb := range(rbs) {
 		encoder.SetBindGroup(1, rb.bg)
 		encoder.SetVertexBuffer(0, rb.vb)
-		encoder.SetIndexBuffer(rb.ib, "uint16")
+		encoder.SetIndexBuffer(rb.ib, gpu.IndexFormat_u16)
 		encoder.DrawIndexed(rb.icount)
 	}
 }

@@ -101,7 +101,7 @@ type Renderable struct {
 	bg: gpu.BindGroup
 }
 
-func createSphereRenderable(device: *gpu.Device, radius: f32, w, h: int, random: f32) => Renderable {
+func createSphereRenderable(device: gpu.Device, radius: f32, w, h: int, random: f32) => Renderable {
 	mesh := createSphere(radius, w, h, random)
 
 	rb: Renderable
@@ -122,7 +122,7 @@ func createSphereRenderable(device: *gpu.Device, radius: f32, w, h: int, random:
 	return rb
 }
 
-func createBindGroup(device: *gpu.Device, pipeline: gpu.RenderPipeline, mat: matrix.Mat4f, texture: *gpu.Texture) => gpu.BindGroup {
+func createBindGroup(device: gpu.Device, pipeline: gpu.RenderPipeline, mat: matrix.Mat4f, texture: gpu.Texture) => gpu.BindGroup {
 	bufdesc := gpu.BufferDesc{
 		Size: uniformBufferSize,
 		Usage: gpu.BufferUsage_UNIFORM | gpu.BufferUsage_COPY_DST,
@@ -131,26 +131,16 @@ func createBindGroup(device: *gpu.Device, pipeline: gpu.RenderPipeline, mat: mat
 	uniformBuffer := device.CreateBuffer(bufdesc)
 	uniformBuffer.Write(0, raw([][4][4]f32{mat.M}))
 
-	entries : []gpu.BindGroupEntry
+	bg_desc: gpu.BindGroupDesc
+	e := gpu.NewBindGroupEntry(0, gpu.NewBufferBinding(uniformBuffer))
+	bg_desc.Entries = append(bg_desc.Entries, e)
 
-	e0 := gpu.NewBindGroupEntry()
-	e0.SetBinding(0)
-	e0.SetResource(gpu.NewBufferBinding(uniformBuffer).ExtObj)
-	entries = append(entries, e0)
+	e = gpu.NewBindGroupEntry(1, sampler)
+	bg_desc.Entries = append(bg_desc.Entries, e)
 
-	e1 := gpu.NewBindGroupEntry()
-	e1.SetBinding(1)
-	e1.SetResource(sampler.ExtObj)
-	entries = append(entries, e1)
+	e = gpu.NewBindGroupEntry(2, texture.CreateView())
+	bg_desc.Entries = append(bg_desc.Entries, e)
 
-	e2 := gpu.NewBindGroupEntry()
-	e2.SetBinding(2)
-	e2.SetResource(texture.CreateView().ExtObj)
-	entries = append(entries, e2)
-
-	bg_desc := gpu.NewBindGroupDesc()
-	bg_desc.SetLayout(pipeline.GetBindGroupLayout(1))
-	bg_desc.SetEntries(entries)
-
+	bg_desc.Layout = pipeline.GetBindGroupLayout(1)
 	return device.CreateBindGroup(bg_desc)
 }
