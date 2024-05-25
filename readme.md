@@ -4,3 +4,5 @@
 
 进入工程目录执行 `wa run`
 
+![](wa-webgpu-01.png)
+
